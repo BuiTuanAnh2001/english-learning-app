@@ -35,10 +35,22 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-              EnglishApp
-            </span>
+          <Link href="/" className="flex items-center space-x-2 group">
+            {/* V Icon */}
+            <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg transition-transform group-hover:scale-105">
+              <span className="text-2xl font-black text-white">V</span>
+              {/* Speech bubble tail */}
+              <div className="absolute -bottom-1 left-3 w-3 h-3 bg-orange-500 transform rotate-45 rounded-sm"></div>
+            </div>
+            {/* Text */}
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-primary">
+                Vocaplanet
+              </span>
+              <span className="text-xs text-muted-foreground -mt-1">
+                Learn & Share Words
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

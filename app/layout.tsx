@@ -5,14 +5,16 @@ import { Navbar } from "@/components/navigation/navbar"
 import { Footer } from "@/components/navigation/footer"
 
 export const metadata: Metadata = {
-  title: "EnglishApp - Học Tiếng Anh Giao Tiếp Hiệu Quả",
+  title: "Vocaplanet - Learn & Share Words",
   description:
-    "Nền tảng học tiếng Anh giao tiếp với phương pháp học tương tác, thực hành thực tế và theo dõi tiến độ chi tiết.",
+    "Nền tảng học tiếng Anh giao tiếp với phương pháp học tương tác, thực hành thực tế và theo dõi tiến độ chi tiết. Vocaplanet - Learn & Share Words.",
   keywords: [
+    "vocaplanet",
     "học tiếng anh",
     "tiếng anh giao tiếp",
     "english learning",
     "online english",
+    "vocabulary learning",
   ],
 }
 

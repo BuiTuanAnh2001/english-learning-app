@@ -60,14 +60,14 @@ export default function Home() {
               className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent pb-2"
               variants={fadeInUp}
             >
-              Học Tiếng Anh Giao Tiếp Hiệu Quả
+              Vocaplanet - Learn & Share Words
             </motion.h1>
             <motion.p
               className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed"
               variants={fadeInUp}
             >
-              Nâng cao khả năng giao tiếp tiếng Anh của bạn với các bài học
-              tương tác, thực hành thực tế và phương pháp học hiện đại
+              Nâng cao khả năng giao tiếp tiếng Anh của bạn với 820+ từ vựng, 
+              các bài học tương tác, thực hành thực tế và phương pháp học hiện đại
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-4"

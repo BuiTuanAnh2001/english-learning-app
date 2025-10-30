@@ -13,6 +13,7 @@ const navItems = [
   { name: "Trang chủ", href: "/" },
   { name: "Bài học", href: "/lessons" },
   { name: "Tiến độ", href: "/progress" },
+  { name: "Admin", href: "/admin" },
 ]
 
 export function Navbar() {

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { LessonCard } from "@/components/lessons/lesson-card"
-import { lessons } from "@/lib/data/lessons"
+import { getLessons, initializeStorage } from "@/lib/services/storage"
+import { Lesson } from "@/lib/types"
 
 const categories = [
   { id: 'all', name: 'Tất cả' },
@@ -15,6 +16,13 @@ const categories = [
 
 export default function LessonsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [lessons, setLessons] = useState<Lesson[]>([])
+
+  useEffect(() => {
+    initializeStorage()
+    const allLessons = getLessons()
+    setLessons(allLessons)
+  }, [])
 
   const filteredLessons = selectedCategory === 'all'
     ? lessons

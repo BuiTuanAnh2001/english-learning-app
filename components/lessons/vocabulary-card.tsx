@@ -30,8 +30,7 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
       >
         {/* Front */}
         <Card
-          className="absolute inset-0 backface-hidden flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10"
-          style={{ backfaceVisibility: "hidden" }}
+          className="absolute inset-0 [backface-visibility:hidden] flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10"
         >
           <CardContent className="text-center p-6">
             <h3 className="text-3xl font-bold text-primary mb-2">
@@ -55,11 +54,7 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
 
         {/* Back */}
         <Card
-          className="absolute inset-0 backface-hidden bg-gradient-to-br from-accent/10 to-primary/10"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-          }}
+          className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-accent/10 to-primary/10"
         >
           <CardContent className="p-6 h-full flex flex-col justify-center">
             <div className="space-y-4">

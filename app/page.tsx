@@ -57,7 +57,7 @@ export default function Home() {
             variants={staggerContainer}
           >
             <motion.h1
-              className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"
+              className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent pb-2"
               variants={fadeInUp}
             >
               Học Tiếng Anh Giao Tiếp Hiệu Quả

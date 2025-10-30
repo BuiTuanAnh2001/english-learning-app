@@ -1,0 +1,55 @@
+[
+  {
+    "id": "auto-generated",
+    "title": "Tên bài học của bạn",
+    "category": "daily",
+    "level": "beginner",
+    "description": "Mô tả ngắn gọn về bài học này",
+    "duration": "15 phút",
+    "completed": false,
+    "progress": 0,
+    "vocabulary": [
+      {
+        "word": "Hello",
+        "pronunciation": "/həˈloʊ/",
+        "meaning": "Xin chào",
+        "example": "Hello! How are you?"
+      },
+      {
+        "word": "Thank you",
+        "pronunciation": "/θæŋk juː/",
+        "meaning": "Cảm ơn",
+        "example": "Thank you for your help!"
+      }
+    ],
+    "phrases": [
+      {
+        "phrase": "How are you?",
+        "meaning": "Bạn khỏe không?",
+        "example": "Hi there! How are you? - I'm fine, thanks!"
+      },
+      {
+        "phrase": "Nice to meet you",
+        "meaning": "Rất vui được gặp bạn",
+        "example": "Hi, I'm John. Nice to meet you!"
+      }
+    ],
+    "dialogues": [
+      {
+        "speaker": "A",
+        "text": "Hello! My name is David.",
+        "translation": "Xin chào! Tên tôi là David."
+      },
+      {
+        "speaker": "B",
+        "text": "Hi David! I'm Lisa. Nice to meet you.",
+        "translation": "Chào David! Tôi là Lisa. Rất vui được gặp bạn."
+      },
+      {
+        "speaker": "A",
+        "text": "Nice to meet you too!",
+        "translation": "Tôi cũng rất vui được gặp bạn!"
+      }
+    ]
+  }
+]

@@ -17,6 +17,8 @@ import vocabFood from '@/public/vocab-packs/120-food-cooking.json';
 
 const LESSONS_KEY = 'english_app_lessons';
 const CATEGORIES_KEY = 'english_app_categories';
+const VERSION_KEY = 'english_app_version';
+const CURRENT_VERSION = '2.1.0'; // Version with auto-loaded vocab packs
 
 // Combine default lessons with vocabulary packs
 // This gives us 13 original lessons + 7 vocab packs = 20 lessons total (820+ vocabulary items)
@@ -32,18 +34,35 @@ const allLessons: Lesson[] = [
   ...(vocabFood as Lesson[]),
 ];
 
+console.log(`📚 Loaded ${allLessons.length} lessons (including ${allLessons.length - defaultLessons.length} vocabulary packs)`);
+
 /**
  * Initialize storage with default data if empty
  * Now includes vocabulary packs automatically!
+ * Also checks version and updates data if needed
  */
 export const initializeStorage = (): void => {
   if (typeof window === 'undefined') return;
 
+  const existingVersion = localStorage.getItem(VERSION_KEY);
   const existingLessons = localStorage.getItem(LESSONS_KEY);
   const existingCategories = localStorage.getItem(CATEGORIES_KEY);
 
+  // Check if version changed - force update to load new vocab packs
+  if (existingVersion !== CURRENT_VERSION) {
+    console.log(`🔄 Version changed from ${existingVersion} to ${CURRENT_VERSION} - updating data...`);
+    localStorage.setItem(LESSONS_KEY, JSON.stringify(allLessons));
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(defaultCategories));
+    localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+    console.log(`✅ Data updated! Now you have ${allLessons.length} lessons.`);
+    return;
+  }
+
+  // First time initialization
   if (!existingLessons) {
     localStorage.setItem(LESSONS_KEY, JSON.stringify(allLessons));
+    localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+    console.log(`✨ First time setup! Loaded ${allLessons.length} lessons.`);
   }
 
   if (!existingCategories) {

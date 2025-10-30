@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ChevronLeft, ChevronRight, Clock, CheckCircle } from "lucide-react"
@@ -10,13 +11,33 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VocabularyCard } from "@/components/lessons/vocabulary-card"
 import { DialogueView } from "@/components/lessons/dialogue-view"
-import { lessons } from "@/lib/data/lessons"
+import { getLessons, getLessonById, initializeStorage } from "@/lib/services/storage"
 import { getLevelColor, getLevelLabel } from "@/lib/utils"
+import { Lesson } from "@/lib/types"
 
 export default function LessonDetailPage() {
   const params = useParams()
   const lessonId = params.id as string
-  const lesson = lessons.find((l) => l.id === lessonId)
+  const [lesson, setLesson] = useState<Lesson | null>(null)
+  const [lessons, setLessons] = useState<Lesson[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    initializeStorage()
+    const foundLesson = getLessonById(lessonId)
+    const allLessons = getLessons()
+    setLesson(foundLesson)
+    setLessons(allLessons)
+    setLoading(false)
+  }, [lessonId])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p>Đang tải...</p>
+      </div>
+    )
+  }
 
   if (!lesson) {
     return (

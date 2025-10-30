@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { Volume2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Vocabulary } from "@/lib/types"
+import { speakEnglish } from "@/lib/utils/speech"
 
 interface VocabularyCardProps {
   vocabulary: Vocabulary
@@ -13,6 +14,21 @@ interface VocabularyCardProps {
 
 export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+
+  const handleSpeak = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (isSpeaking) return
+
+    try {
+      setIsSpeaking(true)
+      await speakEnglish(vocabulary.word)
+    } catch (error) {
+      console.error('Error speaking word:', error)
+    } finally {
+      setIsSpeaking(false)
+    }
+  }
 
   return (
     <motion.div
@@ -38,13 +54,12 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
             </h3>
             <p className="text-muted-foreground mb-4">{vocabulary.pronunciation}</p>
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-              }}
-              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80"
+              onClick={handleSpeak}
+              disabled={isSpeaking}
+              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
-              <Volume2 className="w-4 h-4" />
-              Phát âm
+              <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
+              {isSpeaking ? 'Đang phát...' : 'Phát âm'}
             </button>
             <p className="text-xs text-muted-foreground mt-6">
               Nhấn để xem nghĩa

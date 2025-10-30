@@ -1,15 +1,32 @@
 'use client'
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { Volume2 } from "lucide-react"
 import { Dialogue } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { speakEnglish } from "@/lib/utils/speech"
 
 interface DialogueViewProps {
   dialogues: Dialogue[]
 }
 
 export function DialogueView({ dialogues }: DialogueViewProps) {
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null)
+
+  const handleSpeak = async (text: string, index: number) => {
+    if (speakingIndex !== null) return
+
+    try {
+      setSpeakingIndex(index)
+      await speakEnglish(text)
+    } catch (error) {
+      console.error('Error speaking dialogue:', error)
+    } finally {
+      setSpeakingIndex(null)
+    }
+  }
+
   return (
     <div className="space-y-4 max-w-3xl mx-auto">
       {dialogues.map((dialogue, index) => (
@@ -48,10 +65,12 @@ export function DialogueView({ dialogues }: DialogueViewProps) {
                   {dialogue.text}
                 </p>
                 <button
-                  onClick={() => {}}
-                  className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => handleSpeak(dialogue.text, index)}
+                  disabled={speakingIndex !== null}
+                  className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={speakingIndex === index ? 'Đang phát...' : 'Phát âm'}
                 >
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className={`w-4 h-4 ${speakingIndex === index ? 'animate-pulse' : ''}`} />
                 </button>
               </div>
               {dialogue.translation && (

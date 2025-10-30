@@ -8,9 +8,17 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* About */}
           <div>
-            <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              EnglishApp
-            </h3>
+            <div className="flex items-center space-x-2 mb-4">
+              {/* V Icon - smaller version */}
+              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 shadow-md">
+                <span className="text-xl font-black text-white">V</span>
+                <div className="absolute -bottom-0.5 left-2.5 w-2.5 h-2.5 bg-orange-500 transform rotate-45 rounded-sm"></div>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-primary">Vocaplanet</h3>
+                <p className="text-xs text-muted-foreground -mt-0.5">Learn & Share Words</p>
+              </div>
+            </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Nền tảng học tiếng Anh giao tiếp hiệu quả với phương pháp học
               tương tác và thực hành thực tế.
@@ -85,7 +93,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} EnglishApp. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Vocaplanet. All rights reserved.</p>
         </div>
       </div>
     </footer>

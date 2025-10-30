@@ -1,4 +1,4 @@
-# EnglishApp - Học Tiếng Anh Giao Tiếp Hiệu Quả
+# Vocaplanet - Learn & Share Words
 
 Nền tảng học tiếng Anh giao tiếp với phương pháp học tương tác, thực hành thực tế và theo dõi tiến độ chi tiết.
 

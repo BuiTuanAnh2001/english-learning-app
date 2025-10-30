@@ -35,18 +35,20 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="h-64 perspective-1000"
+      className="h-64"
+      style={{ perspective: "1000px" }}
       onClick={() => setIsFlipped(!isFlipped)}
     >
       <motion.div
         className="relative w-full h-full cursor-pointer"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
         style={{ transformStyle: "preserve-3d" }}
       >
         {/* Front */}
         <Card
-          className="absolute inset-0 [backface-visibility:hidden] flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10"
+          className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10"
+          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
         >
           <CardContent className="text-center p-6">
             <h3 className="text-3xl font-bold text-primary mb-2">
@@ -69,7 +71,12 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
 
         {/* Back */}
         <Card
-          className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-accent/10 to-primary/10"
+          className="absolute inset-0 bg-gradient-to-br from-accent/10 to-primary/10"
+          style={{ 
+            backfaceVisibility: "hidden", 
+            WebkitBackfaceVisibility: "hidden",
+            transform: "rotateY(180deg)"
+          }}
         >
           <CardContent className="p-6 h-full flex flex-col justify-center">
             <div className="space-y-4">

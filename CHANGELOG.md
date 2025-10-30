@@ -1,4 +1,58 @@
-# 🎉 Cập nhật mới: Dữ liệu & Tính năng Import/Export
+# 📝 Changelog - English Learning App
+
+## [v2.1.0] - 2024-10-30
+
+### 🚀 MAJOR UPDATE: Auto-Load Vocabulary Packs!
+
+#### ⚡ Automatic Loading
+- ✅ **No manual import needed!** All vocabulary packs are now automatically loaded when the app starts
+- ✅ Integrated directly into `lib/services/storage.ts`
+- ✅ **20 lessons available immediately**: 13 original lessons + 7 vocabulary packs
+- ✅ Total **820+ vocabulary items** ready to use from first visit
+
+#### 🔧 Technical Improvements
+- ✅ Import JSON vocabulary packs directly in TypeScript
+- ✅ Combine default lessons with vocab packs using ES6 spread operator
+- ✅ Fixed type compatibility issues (changed `usage` → `example` in phrases)
+- ✅ Leveraged `resolveJsonModule: true` in tsconfig.json
+
+#### 📖 Documentation
+- ✅ Created `LOAD_VOCAB_PACKS.md` - Guide to vocabulary loading approaches
+- ✅ Updated `README.md` - Emphasized auto-loading feature
+- ✅ Updated `CHANGELOG.md` - Documented all changes
+
+---
+
+## [v2.0.0] - 2024-10-30
+
+### 🎉 MAJOR UPDATE: 820+ Vocabulary Items Added!
+
+#### 📚 7 Vocabulary Packs Created
+1. **100 Basic Verbs** - 100 động từ cơ bản thông dụng nhất
+2. **150 Adjectives** - 150 tính từ mô tả người, vật, sự việc
+3. **100 Adverbs** - 100 trạng từ bổ nghĩa động từ, tính từ
+4. **150 Common Phrases** - 150 cụm từ giao tiếp hàng ngày
+5. **100 Business Vocabulary** - 100 từ vựng môi trường kinh doanh
+6. **100 Travel Vocabulary** - 100 từ vựng du lịch
+7. **120 Food & Cooking** - 120 từ vựng đồ ăn & nấu ăn
+
+**Total: 820 items** 🎯
+
+#### 📖 Documentation
+- ✅ Created `VOCABULARY_PACKS.md` - Hướng dẫn chi tiết về bộ từ vựng
+- ✅ Updated `README.md` - Thêm thông tin về vocabulary packs
+- ✅ Updated `CHANGELOG.md` - Log tất cả thay đổi
+
+#### 🎯 Learning Path
+- **Level 1 (Beginner)**: Verbs, Adjectives, Phrases, Adverbs
+- **Level 2 (Everyday)**: Food & Cooking
+- **Level 3 (Specialized)**: Travel, Business
+
+---
+
+## [v1.0.0] - 2024-10-29
+
+### 🎉 Initial Release: Dữ liệu & Tính năng Import/Export
 
 ## ✨ Những gì đã được thêm
 

@@ -154,3 +154,153 @@ export const resetStorage = (): void => {
   localStorage.removeItem(CATEGORIES_KEY);
   initializeStorage();
 };
+
+/**
+ * Export all lessons to JSON
+ */
+export const exportLessonsToJSON = (): string => {
+  const lessons = getLessons();
+  return JSON.stringify(lessons, null, 2);
+};
+
+/**
+ * Import lessons from JSON
+ */
+export const importLessonsFromJSON = (jsonString: string): { success: boolean; message: string; count?: number } => {
+  try {
+    const importedLessons: Lesson[] = JSON.parse(jsonString);
+    
+    // Validate structure
+    if (!Array.isArray(importedLessons)) {
+      return { success: false, message: 'Invalid format: Expected an array of lessons' };
+    }
+
+    // Validate each lesson has required fields
+    for (const lesson of importedLessons) {
+      if (!lesson.title || !lesson.category || !lesson.level) {
+        return { success: false, message: 'Invalid lesson structure: Missing required fields' };
+      }
+    }
+
+    // Get existing lessons and merge
+    const existingLessons = getLessons();
+    const mergedLessons = [...existingLessons];
+
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    for (const importedLesson of importedLessons) {
+      const existingIndex = mergedLessons.findIndex(l => l.id === importedLesson.id);
+      
+      if (existingIndex !== -1) {
+        // Update existing lesson
+        mergedLessons[existingIndex] = importedLesson;
+        updatedCount++;
+      } else {
+        // Add new lesson with unique ID
+        const newLesson = {
+          ...importedLesson,
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        };
+        mergedLessons.push(newLesson);
+        addedCount++;
+      }
+    }
+
+    // Save to localStorage
+    localStorage.setItem(LESSONS_KEY, JSON.stringify(mergedLessons));
+
+    // Update category counts
+    const categories = getCategories();
+    categories.forEach(cat => updateCategoryLessonCount(cat.id));
+
+    return {
+      success: true,
+      message: `Successfully imported ${addedCount} new lessons and updated ${updatedCount} existing lessons`,
+      count: addedCount + updatedCount,
+    };
+  } catch (error) {
+    console.error('Import error:', error);
+    return {
+      success: false,
+      message: `Failed to import: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+};
+
+/**
+ * Download lessons as JSON file
+ */
+export const downloadLessonsAsFile = (filename: string = 'lessons.json'): void => {
+  const jsonString = exportLessonsToJSON();
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Export lessons template (empty structure for users to fill)
+ */
+export const exportLessonsTemplate = (): string => {
+  const template: Lesson = {
+    id: 'auto-generated',
+    title: 'Your Lesson Title',
+    category: 'daily',
+    level: 'beginner',
+    description: 'Description of your lesson',
+    duration: '15 phút',
+    completed: false,
+    progress: 0,
+    vocabulary: [
+      {
+        word: 'Example',
+        pronunciation: '/ɪɡˈzæmpl/',
+        meaning: 'Ví dụ',
+        example: 'This is an example sentence.',
+      },
+    ],
+    phrases: [
+      {
+        phrase: 'Example phrase',
+        meaning: 'Nghĩa của cụm từ',
+        example: 'Example: This is how you use it.',
+      },
+    ],
+    dialogues: [
+      {
+        speaker: 'A',
+        text: 'Hello!',
+        translation: 'Xin chào!',
+      },
+      {
+        speaker: 'B',
+        text: 'Hi there!',
+        translation: 'Chào bạn!',
+      },
+    ],
+  };
+
+  return JSON.stringify([template], null, 2);
+};
+
+/**
+ * Download lessons template file
+ */
+export const downloadLessonsTemplate = (): void => {
+  const templateString = exportLessonsTemplate();
+  const blob = new Blob([templateString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'lesson-template.json';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};

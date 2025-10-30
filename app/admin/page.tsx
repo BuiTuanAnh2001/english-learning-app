@@ -1,19 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { Plus, Edit, Trash2, BookOpen, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, BookOpen, Search, Download, Upload, FileJson } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { getLessons, deleteLesson, initializeStorage, updateCategoryLessonCount } from '@/lib/services/storage'
+import { 
+  getLessons, 
+  deleteLesson, 
+  initializeStorage, 
+  updateCategoryLessonCount,
+  downloadLessonsAsFile,
+  downloadLessonsTemplate,
+  importLessonsFromJSON,
+} from '@/lib/services/storage'
 import { Lesson } from '@/lib/types'
 
 export default function AdminPage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     initializeStorage()
@@ -35,6 +44,48 @@ export default function AdminPage() {
     }
   }
 
+  const handleExport = () => {
+    downloadLessonsAsFile(`lessons-${Date.now()}.json`)
+    alert('Đã tải xuống file bài học!')
+  }
+
+  const handleDownloadTemplate = () => {
+    downloadLessonsTemplate()
+    alert('Đã tải xuống file mẫu!')
+  }
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string
+        const result = importLessonsFromJSON(content)
+        
+        if (result.success) {
+          alert(result.message)
+          loadLessons()
+        } else {
+          alert(`Lỗi: ${result.message}`)
+        }
+      } catch (error) {
+        alert('Lỗi khi đọc file. Vui lòng kiểm tra định dạng JSON.')
+      }
+    }
+    reader.readAsText(file)
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
+  }
+
   const filteredLessons = lessons.filter(lesson => {
     const matchesSearch = lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          lesson.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -52,18 +103,42 @@ export default function AdminPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleImport}
+        className="hidden"
+      />
+
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">Quản lý bài học và từ vựng</p>
         </div>
-        <Link href="/admin/lessons/new">
-          <Button size="lg" className="gap-2">
-            <Plus className="w-5 h-5" />
-            Thêm bài học mới
+        
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
+            <FileJson className="w-4 h-4" />
+            Tải mẫu
           </Button>
-        </Link>
+          <Button variant="outline" onClick={handleExport} className="gap-2">
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
+          <Button variant="outline" onClick={triggerFileInput} className="gap-2">
+            <Upload className="w-4 h-4" />
+            Import
+          </Button>
+          <Link href="/admin/lessons/new">
+            <Button size="default" className="gap-2">
+              <Plus className="w-5 h-5" />
+              Thêm bài mới
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

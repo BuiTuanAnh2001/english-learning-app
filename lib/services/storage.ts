@@ -6,11 +6,35 @@
 import { Lesson, Category } from '@/lib/types';
 import { lessons as defaultLessons, categories as defaultCategories } from '@/lib/data/lessons';
 
+// Import vocabulary packs (automatically loaded)
+import vocabVerbs from '@/public/vocab-packs/100-basic-verbs.json';
+import vocabAdjectives from '@/public/vocab-packs/150-adjectives.json';
+import vocabAdverbs from '@/public/vocab-packs/100-adverbs.json';
+import vocabPhrases from '@/public/vocab-packs/150-phrases.json';
+import vocabBusiness from '@/public/vocab-packs/100-business.json';
+import vocabTravel from '@/public/vocab-packs/100-travel.json';
+import vocabFood from '@/public/vocab-packs/120-food-cooking.json';
+
 const LESSONS_KEY = 'english_app_lessons';
 const CATEGORIES_KEY = 'english_app_categories';
 
+// Combine default lessons with vocabulary packs
+// This gives us 13 original lessons + 7 vocab packs = 20 lessons total (820+ vocabulary items)
+// Each vocab pack JSON is an array with one lesson object, so we spread the array
+const allLessons: Lesson[] = [
+  ...defaultLessons,
+  ...(vocabVerbs as Lesson[]),
+  ...(vocabAdjectives as Lesson[]),
+  ...(vocabAdverbs as Lesson[]),
+  ...(vocabPhrases as Lesson[]),
+  ...(vocabBusiness as Lesson[]),
+  ...(vocabTravel as Lesson[]),
+  ...(vocabFood as Lesson[]),
+];
+
 /**
  * Initialize storage with default data if empty
+ * Now includes vocabulary packs automatically!
  */
 export const initializeStorage = (): void => {
   if (typeof window === 'undefined') return;
@@ -19,7 +43,7 @@ export const initializeStorage = (): void => {
   const existingCategories = localStorage.getItem(CATEGORIES_KEY);
 
   if (!existingLessons) {
-    localStorage.setItem(LESSONS_KEY, JSON.stringify(defaultLessons));
+    localStorage.setItem(LESSONS_KEY, JSON.stringify(allLessons));
   }
 
   if (!existingCategories) {
@@ -28,17 +52,17 @@ export const initializeStorage = (): void => {
 };
 
 /**
- * Get all lessons from storage
+ * Get all lessons from storage (includes vocabulary packs)
  */
 export const getLessons = (): Lesson[] => {
-  if (typeof window === 'undefined') return defaultLessons;
+  if (typeof window === 'undefined') return allLessons;
 
   try {
     const stored = localStorage.getItem(LESSONS_KEY);
-    return stored ? JSON.parse(stored) : defaultLessons;
+    return stored ? JSON.parse(stored) : allLessons;
   } catch (error) {
     console.error('Error loading lessons:', error);
-    return defaultLessons;
+    return allLessons;
   }
 };
 

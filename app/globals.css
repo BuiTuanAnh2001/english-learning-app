@@ -55,9 +55,9 @@
   @apply bg-primary/80;
 }
 
-/* Smooth transitions */
-* {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+/* Smooth transitions for interactive elements */
+button, a, [role="button"] {
+  transition-property: color, background-color, border-color, transform, opacity;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }

@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Volume2 } from "lucide-react"
+import { Volume2, Image as ImageIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Vocabulary } from "@/lib/types"
 import { speakEnglish } from "@/lib/utils/speech"
+import Image from "next/image"
 
 interface VocabularyCardProps {
   vocabulary: Vocabulary
@@ -47,25 +49,57 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
       >
         {/* Front */}
         <Card
-          className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10"
+          className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden"
           style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
         >
-          <CardContent className="text-center p-6">
-            <h3 className="text-3xl font-bold text-primary mb-2">
-              {vocabulary.word}
-            </h3>
-            <p className="text-muted-foreground mb-4">{vocabulary.pronunciation}</p>
-            <button
-              onClick={handleSpeak}
-              disabled={isSpeaking}
-              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-            >
-              <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
-              {isSpeaking ? 'Đang phát...' : 'Phát âm'}
-            </button>
-            <p className="text-xs text-muted-foreground mt-6">
-              Nhấn để xem nghĩa
-            </p>
+          <CardContent className="p-0 h-full flex flex-col">
+            {/* Image Section */}
+            {vocabulary.imageUrl && (
+              <div className="relative w-full h-32 bg-muted">
+                <Image
+                  src={vocabulary.imageUrl}
+                  alt={vocabulary.word}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Content Section */}
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2">
+                {vocabulary.word}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">{vocabulary.pronunciation}</p>
+              
+              {/* Tags */}
+              {vocabulary.tags && vocabulary.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 justify-center mb-3">
+                  {vocabulary.tags.slice(0, 3).map((tag, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              <button
+                onClick={handleSpeak}
+                disabled={isSpeaking}
+                className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              >
+                <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
+                {isSpeaking ? 'Đang phát...' : 'Phát âm'}
+              </button>
+              <p className="text-xs text-muted-foreground mt-4">
+                Nhấn để xem nghĩa
+              </p>
+            </div>
           </CardContent>
         </Card>
 

@@ -5,18 +5,23 @@ export interface Vocabulary {
   pronunciation: string;
   meaning: string;
   example: string;
+  imageUrl?: string; // URL to illustration image
+  tags?: string[]; // e.g., ['noun', 'common', 'food']
 }
 
 export interface Phrase {
   phrase: string;
   meaning: string;
   example: string;
+  imageUrl?: string;
+  context?: string; // When to use this phrase
 }
 
 export interface Dialogue {
   speaker: string;
   text: string;
   translation?: string;
+  emotion?: string; // e.g., 'happy', 'surprised', 'formal'
 }
 
 export interface Lesson {
@@ -31,6 +36,9 @@ export interface Lesson {
   dialogues: Dialogue[];
   completed: boolean;
   progress: number;
+  thumbnailUrl?: string; // Main lesson image
+  objectives?: string[]; // Learning objectives
+  tips?: string[]; // Helpful tips for learners
 }
 
 export interface Category {

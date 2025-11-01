@@ -4,10 +4,11 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LessonForm } from '@/components/admin/lesson-form'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 import { createLesson, updateCategoryLessonCount } from '@/lib/services/storage'
 import { Lesson } from '@/lib/types'
 
-export default function NewLessonPage() {
+function NewLessonPageContent() {
   const router = useRouter()
 
   const handleSubmit = (data: Omit<Lesson, 'id'>) => {
@@ -41,5 +42,13 @@ export default function NewLessonPage() {
 
       <LessonForm onSubmit={handleSubmit} />
     </div>
+  )
+}
+
+export default function NewLessonPage() {
+  return (
+    <ProtectedRoute>
+      <NewLessonPageContent />
+    </ProtectedRoute>
   )
 }

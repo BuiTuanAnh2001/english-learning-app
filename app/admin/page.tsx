@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 import { 
   getLessons, 
   deleteLesson, 
@@ -18,7 +19,7 @@ import {
 } from '@/lib/services/storage'
 import { Lesson } from '@/lib/types'
 
-export default function AdminPage() {
+function AdminPageContent() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
@@ -265,5 +266,13 @@ export default function AdminPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function AdminPage() {
+  return (
+    <ProtectedRoute>
+      <AdminPageContent />
+    </ProtectedRoute>
   )
 }

@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Volume2 } from "lucide-react"
 import { Dialogue } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { speakEnglish } from "@/lib/utils/speech"
+import { speakDialogue } from "@/lib/utils/speech"
 
 interface DialogueViewProps {
   dialogues: Dialogue[]
@@ -14,12 +14,13 @@ interface DialogueViewProps {
 export function DialogueView({ dialogues }: DialogueViewProps) {
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null)
 
-  const handleSpeak = async (text: string, index: number) => {
+  const handleSpeak = async (dialogue: Dialogue, index: number) => {
     if (speakingIndex !== null) return
 
     try {
       setSpeakingIndex(index)
-      await speakEnglish(text)
+      // Use speakDialogue with emotion and speaker index for voice variation
+      await speakDialogue(dialogue.text, dialogue.emotion, index)
     } catch (error) {
       console.error('Error speaking dialogue:', error)
     } finally {
@@ -75,7 +76,7 @@ export function DialogueView({ dialogues }: DialogueViewProps) {
                     {dialogue.text}
                   </p>
                   <button
-                    onClick={() => handleSpeak(dialogue.text, index)}
+                    onClick={() => handleSpeak(dialogue, index)}
                     disabled={speakingIndex !== null}
                     className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={speakingIndex === index ? 'Đang phát...' : 'Phát âm'}

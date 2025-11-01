@@ -24,7 +24,8 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
 
     try {
       setIsSpeaking(true)
-      await speakEnglish(vocabulary.word)
+      // Speak with friendly emotion for vocabulary learning
+      await speakEnglish(vocabulary.word, { emotion: 'friendly', rate: 0.85 })
     } catch (error) {
       console.error('Error speaking word:', error)
     } finally {

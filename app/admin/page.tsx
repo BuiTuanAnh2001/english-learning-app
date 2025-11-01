@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/auth/protected-route'
+import { VoiceDebugPanel } from '@/components/lessons/voice-debug-panel'
 import { 
   getLessons, 
   deleteLesson, 
@@ -23,6 +24,7 @@ function AdminPageContent() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
+  const [showVoiceDebug, setShowVoiceDebug] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -113,6 +115,13 @@ function AdminPageContent() {
         className="hidden"
       />
 
+      {/* Voice Debug Panel */}
+      {showVoiceDebug && (
+        <div className="mb-8">
+          <VoiceDebugPanel />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -121,6 +130,13 @@ function AdminPageContent() {
         </div>
         
         <div className="flex flex-wrap gap-2">
+          <Button 
+            variant={showVoiceDebug ? "default" : "outline"} 
+            onClick={() => setShowVoiceDebug(!showVoiceDebug)} 
+            className="gap-2"
+          >
+            🎤 {showVoiceDebug ? 'Ẩn' : 'Test'} Giọng nói
+          </Button>
           <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
             <FileJson className="w-4 h-4" />
             Tải mẫu

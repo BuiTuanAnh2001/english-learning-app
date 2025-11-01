@@ -5,10 +5,11 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LessonForm } from '@/components/admin/lesson-form'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 import { getLessonById, updateLesson, updateCategoryLessonCount } from '@/lib/services/storage'
 import { Lesson } from '@/lib/types'
 
-export default function EditLessonPage() {
+function EditLessonPageContent() {
   const router = useRouter()
   const params = useParams()
   const [lesson, setLesson] = useState<Lesson | null>(null)
@@ -87,5 +88,13 @@ export default function EditLessonPage() {
         isEditing
       />
     </div>
+  )
+}
+
+export default function EditLessonPage() {
+  return (
+    <ProtectedRoute>
+      <EditLessonPageContent />
+    </ProtectedRoute>
   )
 }

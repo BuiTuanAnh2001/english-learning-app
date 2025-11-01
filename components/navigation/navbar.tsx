@@ -2,29 +2,52 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Menu, X, Sun, Moon } from "lucide-react"
+import { Menu, X, Sun, Moon, Shield, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/contexts/auth-context"
+import { LoginModal } from "@/components/auth/login-modal"
 
 const navItems = [
   { name: "Trang chủ", href: "/" },
   { name: "Bài học", href: "/lessons" },
   { name: "Tiến độ", href: "/progress" },
-  process.env.NODE_ENV === 'development' && { name: "Admin", href: "/admin" },
-].filter(Boolean) as { name: string; href: string }[]
+]
 
 export function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
+  const [showLoginModal, setShowLoginModal] = React.useState(false)
   const { theme, setTheme } = useTheme()
+  const { isAuthenticated, logout } = useAuth()
   const pathname = usePathname()
+  const router = useRouter()
 
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  const handleAdminClick = () => {
+    if (isAuthenticated) {
+      router.push('/admin')
+    } else {
+      setShowLoginModal(true)
+    }
+  }
+
+  const handleLoginSuccess = () => {
+    router.push('/admin')
+  }
+
+  const handleLogout = () => {
+    logout()
+    if (pathname.startsWith('/admin')) {
+      router.push('/')
+    }
+  }
 
   return (
     <motion.nav
@@ -77,8 +100,32 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Dark Mode Toggle & Mobile Menu Button */}
+          {/* Dark Mode Toggle & Admin/Logout & Mobile Menu Button */}
           <div className="flex items-center gap-2">
+            {mounted && isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="hidden md:flex gap-2 text-destructive hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+                Đăng xuất
+              </Button>
+            )}
+            
+            {mounted && (
+              <Button
+                variant={isAuthenticated ? "default" : "outline"}
+                size="sm"
+                onClick={handleAdminClick}
+                className="hidden md:flex gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                Admin
+              </Button>
+            )}
+
             {mounted && (
               <Button
                 variant="ghost"
@@ -128,6 +175,31 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
+            
+            {mounted && (
+              <button
+                onClick={() => {
+                  handleAdminClick()
+                  setIsOpen(false)
+                }}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+              >
+                <Shield className="h-4 w-4" /> Admin
+              </button>
+            )}
+
+            {mounted && isAuthenticated && (
+              <button
+                onClick={() => {
+                  handleLogout()
+                  setIsOpen(false)
+                }}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-destructive hover:text-destructive/80"
+              >
+                <LogOut className="h-4 w-4" /> Đăng xuất
+              </button>
+            )}
+
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -147,6 +219,12 @@ export function Navbar() {
           </motion.div>
         )}
       </div>
+
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </motion.nav>
   )
 }

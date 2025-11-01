@@ -13,8 +13,8 @@ const navItems = [
   { name: "Trang chủ", href: "/" },
   { name: "Bài học", href: "/lessons" },
   { name: "Tiến độ", href: "/progress" },
-  { name: "Admin", href: "/admin" },
-]
+  process.env.NODE_ENV === 'development' && { name: "Admin", href: "/admin" },
+].filter(Boolean) as { name: string; href: string }[]
 
 export function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false)

@@ -40,3 +40,30 @@ export interface Category {
   icon: string;
   lessonCount: number;
 }
+
+export interface QuizQuestion {
+  id: string;
+  type: 'multiple-choice' | 'fill-blank' | 'match' | 'true-false';
+  question: string;
+  options?: string[];
+  correctAnswer: string | string[];
+  explanation?: string;
+  points: number;
+}
+
+export interface QuizAnswer {
+  questionId: string;
+  userAnswer: string | string[];
+  isCorrect: boolean;
+  timeSpent: number;
+}
+
+export interface QuizResult {
+  lessonId: string;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  answers: QuizAnswer[];
+  completedAt: Date;
+  timeSpent: number;
+}

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { ChevronLeft, ChevronRight, Clock, CheckCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, CheckCircle, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -194,10 +194,18 @@ export default function LessonDetailPage() {
             )}
           </div>
 
-          <Button className="gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Đánh dấu hoàn thành
-          </Button>
+          <div className="flex gap-2">
+            <Link href={`/lessons/${lessonId}/quiz`}>
+              <Button variant="outline" className="gap-2">
+                <Award className="w-4 h-4" />
+                Làm Quiz
+              </Button>
+            </Link>
+            <Button className="gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Đánh dấu hoàn thành
+            </Button>
+          </div>
         </div>
       </motion.div>
     </div>

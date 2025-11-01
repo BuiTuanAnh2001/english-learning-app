@@ -168,17 +168,50 @@ export const getVoicesByGender = (): { male: SpeechSynthesisVoice[]; female: Spe
   const voices = getAvailableVoices();
   const englishVoices = voices.filter(v => v.lang.startsWith('en'));
   
-  const maleKeywords = ['Male', 'male', 'David', 'Daniel', 'James', 'Thomas', 'Alex'];
-  const femaleKeywords = ['Female', 'female', 'Samantha', 'Karen', 'Victoria', 'Susan', 'Zira'];
+  // Common male voice names
+  const maleKeywords = [
+    'Male', 'male', 'Man', 'man',
+    'David', 'Daniel', 'James', 'Thomas', 'Alex', 'George', 
+    'Fred', 'Oliver', 'Rishi', 'Ryan', 'Aaron', 'Bruce',
+    'Guy', 'Male'
+  ];
   
-  return {
-    male: englishVoices.filter(v => 
-      maleKeywords.some(keyword => v.name.includes(keyword))
-    ),
-    female: englishVoices.filter(v => 
-      femaleKeywords.some(keyword => v.name.includes(keyword))
-    ),
-  };
+  // Common female voice names
+  const femaleKeywords = [
+    'Female', 'female', 'Woman', 'woman',
+    'Samantha', 'Karen', 'Victoria', 'Susan', 'Zira', 'Joanna',
+    'Kate', 'Lisa', 'Emma', 'Amy', 'Salli', 'Kimberly',
+    'Moira', 'Fiona', 'Serena', 'Tessa', 'Ava', 'Allison'
+  ];
+  
+  const male: SpeechSynthesisVoice[] = [];
+  const female: SpeechSynthesisVoice[] = [];
+  const unclassified: SpeechSynthesisVoice[] = [];
+  
+  // Classify voices
+  englishVoices.forEach(voice => {
+    const isMale = maleKeywords.some(keyword => voice.name.toLowerCase().includes(keyword.toLowerCase()));
+    const isFemale = femaleKeywords.some(keyword => voice.name.toLowerCase().includes(keyword.toLowerCase()));
+    
+    if (isMale && !isFemale) {
+      male.push(voice);
+    } else if (isFemale && !isMale) {
+      female.push(voice);
+    } else {
+      unclassified.push(voice);
+    }
+  });
+  
+  // If we don't have enough voices in either category, distribute unclassified voices
+  if (male.length === 0 && unclassified.length > 0) {
+    male.push(...unclassified.slice(0, Math.ceil(unclassified.length / 2)));
+    unclassified.splice(0, Math.ceil(unclassified.length / 2));
+  }
+  if (female.length === 0 && unclassified.length > 0) {
+    female.push(...unclassified);
+  }
+  
+  return { male, female };
 };
 
 /**

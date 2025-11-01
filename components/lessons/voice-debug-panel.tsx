@@ -14,9 +14,17 @@ export function VoiceDebugPanel() {
   useEffect(() => {
     const loadVoices = () => {
       const allVoices = getAvailableVoices()
-      const englishVoices = allVoices.filter(v => v.lang.startsWith('en'))
-      setVoices(englishVoices)
+      // Include English and Vietnamese voices
+      const relevantVoices = allVoices.filter(v => 
+        v.lang.startsWith('en') || 
+        v.lang.startsWith('vi') || 
+        v.name.includes('Vietnam')
+      )
+      setVoices(relevantVoices)
       setCategorized(getVoicesByGender())
+      
+      // Log all voices for debugging
+      console.log('📋 All Available Voices:', allVoices.map(v => `${v.name} (${v.lang})`))
     }
 
     loadVoices()
@@ -101,15 +109,18 @@ export function VoiceDebugPanel() {
             </div>
           </div>
 
-          {/* All English Voices */}
+          {/* All English & Vietnamese Voices */}
           <div>
             <h3 className="text-lg font-semibold mb-3">
-              📋 All English Voices ({voices.length})
+              📋 All English & Vietnamese Voices ({voices.length})
             </h3>
             <div className="text-xs text-muted-foreground space-y-1 max-h-60 overflow-y-auto">
               {voices.map((voice, idx) => (
-                <div key={idx} className="font-mono">
-                  {idx + 1}. {voice.name} - {voice.lang}
+                <div key={idx} className="font-mono flex items-center gap-2">
+                  <span>{idx + 1}.</span>
+                  <span className="flex-1">{voice.name}</span>
+                  <Badge variant="outline" className="text-xs">{voice.lang}</Badge>
+                  {voice.name.toLowerCase().includes('vietnam') && <Badge variant="secondary">🇻🇳</Badge>}
                 </div>
               ))}
             </div>

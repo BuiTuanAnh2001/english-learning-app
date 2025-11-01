@@ -133,8 +133,8 @@ export function VoiceSettings() {
         <div className="text-xs text-muted-foreground space-y-1">
           <p><strong>Mẹo:</strong></p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Giọng "Natural" hoặc "Premium" nghe tự nhiên hơn</li>
-            <li>Giọng "Local" hoạt động offline</li>
+            <li>Giọng &ldquo;Natural&rdquo; hoặc &ldquo;Premium&rdquo; nghe tự nhiên hơn</li>
+            <li>Giọng &ldquo;Local&rdquo; hoạt động offline</li>
             <li>Giọng nam/nữ sẽ tự động xen kẽ trong hội thoại</li>
           </ul>
         </div>

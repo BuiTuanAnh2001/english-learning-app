@@ -5,6 +5,7 @@
 
 import { Lesson, Category } from '@/lib/types';
 import { lessons as defaultLessons, categories as defaultCategories } from '@/lib/data/lessons';
+import { enhancedLessons } from '@/lib/data/enhanced-lessons';
 
 // Import vocabulary packs (automatically loaded)
 import vocabVerbs from '@/public/vocab-packs/100-basic-verbs.json';
@@ -18,13 +19,14 @@ import vocabFood from '@/public/vocab-packs/120-food-cooking.json';
 const LESSONS_KEY = 'english_app_lessons';
 const CATEGORIES_KEY = 'english_app_categories';
 const VERSION_KEY = 'english_app_version';
-const CURRENT_VERSION = '2.1.0'; // Version with auto-loaded vocab packs
+const CURRENT_VERSION = '2.2.0'; // Version with enhanced lessons + images
 
-// Combine default lessons with vocabulary packs
-// This gives us 13 original lessons + 7 vocab packs = 20 lessons total (820+ vocabulary items)
+// Combine default lessons with enhanced lessons and vocabulary packs
+// This gives us 13 original + 2 enhanced + 7 vocab packs = 22 lessons total (870+ vocabulary items)
 // Each vocab pack JSON is an array with one lesson object, so we spread the array
 const allLessons: Lesson[] = [
   ...defaultLessons,
+  ...enhancedLessons,  // Add the 2 new lessons with images
   ...(vocabVerbs as Lesson[]),
   ...(vocabAdjectives as Lesson[]),
   ...(vocabAdverbs as Lesson[]),
@@ -34,7 +36,7 @@ const allLessons: Lesson[] = [
   ...(vocabFood as Lesson[]),
 ];
 
-console.log(`📚 Loaded ${allLessons.length} lessons (including ${allLessons.length - defaultLessons.length} vocabulary packs)`);
+console.log(`📚 Loaded ${allLessons.length} lessons (${defaultLessons.length} default + ${enhancedLessons.length} enhanced + ${allLessons.length - defaultLessons.length - enhancedLessons.length} vocab packs)`);
 
 /**
  * Initialize storage with default data if empty

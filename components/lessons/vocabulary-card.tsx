@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from "react"
-import { motion } from "framer-motion"
-import { Volume2, Image as ImageIcon } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Volume2, Mic } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Vocabulary } from "@/lib/types"
 import { speakEnglish } from "@/lib/utils/speech"
+import { PronunciationAssessment } from "./pronunciation-assessment"
 import Image from "next/image"
 
 interface VocabularyCardProps {
@@ -17,6 +19,7 @@ interface VocabularyCardProps {
 export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [showPronunciation, setShowPronunciation] = useState(false)
 
   const handleSpeak = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -89,14 +92,26 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
                 </div>
               )}
               
-              <button
-                onClick={handleSpeak}
-                disabled={isSpeaking}
-                className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-              >
-                <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
-                {isSpeaking ? 'Đang phát...' : 'Phát âm'}
-              </button>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={handleSpeak}
+                  disabled={isSpeaking}
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                >
+                  <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
+                  {isSpeaking ? 'Đang phát...' : 'Nghe'}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPronunciation(true);
+                  }}
+                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <Mic className="w-4 h-4" />
+                  Luyện phát âm
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground mt-4">
                 Nhấn để xem nghĩa
               </p>
@@ -130,6 +145,17 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Pronunciation Assessment Modal */}
+      <AnimatePresence>
+        {showPronunciation && (
+          <PronunciationAssessment
+            text={vocabulary.word}
+            translation={vocabulary.meaning}
+            onClose={() => setShowPronunciation(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

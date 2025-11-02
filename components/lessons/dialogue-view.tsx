@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from "react"
-import { motion } from "framer-motion"
-import { Volume2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Volume2, Mic } from "lucide-react"
 import { Dialogue } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { speakDialogue } from "@/lib/utils/speech"
+import { PronunciationAssessment } from "./pronunciation-assessment"
 
 interface DialogueViewProps {
   dialogues: Dialogue[]
@@ -13,6 +14,7 @@ interface DialogueViewProps {
 
 export function DialogueView({ dialogues }: DialogueViewProps) {
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null)
+  const [pronunciationIndex, setPronunciationIndex] = useState<number | null>(null)
 
   const handleSpeak = async (dialogue: Dialogue, index: number) => {
     if (speakingIndex !== null) return
@@ -73,17 +75,26 @@ export function DialogueView({ dialogues }: DialogueViewProps) {
                 )}
               >
                 <div className="flex items-start gap-2">
-                  <p className="text-sm font-medium leading-relaxed">
+                  <p className="text-sm font-medium leading-relaxed flex-1">
                     {dialogue.text}
                   </p>
-                  <button
-                    onClick={() => handleSpeak(dialogue, index)}
-                    disabled={speakingIndex !== null}
-                    className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={speakingIndex === index ? 'Đang phát...' : 'Phát âm'}
-                  >
-                    <Volume2 className={`w-4 h-4 ${speakingIndex === index ? 'animate-pulse' : ''}`} />
-                  </button>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => handleSpeak(dialogue, index)}
+                      disabled={speakingIndex !== null}
+                      className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={speakingIndex === index ? 'Đang phát...' : 'Nghe'}
+                    >
+                      <Volume2 className={`w-4 h-4 ${speakingIndex === index ? 'animate-pulse' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => setPronunciationIndex(index)}
+                      className="text-muted-foreground hover:text-blue-600 transition-colors"
+                      title="Luyện phát âm"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 {dialogue.translation && (
                   <p className="text-xs text-muted-foreground mt-2 italic">
@@ -106,6 +117,17 @@ export function DialogueView({ dialogues }: DialogueViewProps) {
           </motion.div>
         )
       })}
+
+      {/* Pronunciation Assessment Modal */}
+      <AnimatePresence>
+        {pronunciationIndex !== null && (
+          <PronunciationAssessment
+            text={dialogues[pronunciationIndex].text}
+            translation={dialogues[pronunciationIndex].translation}
+            onClose={() => setPronunciationIndex(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -290,38 +290,8 @@ export const speakEnglish = async (text: string, options: Omit<SpeechOptions, 'l
 };
 
 /**
- * Get user-selected voices from localStorage
- */
-const getUserVoicePreferences = (): { femaleVoiceName: string | null; maleVoiceName: string | null } => {
-  if (typeof window === 'undefined') return { femaleVoiceName: null, maleVoiceName: null };
-  
-  return {
-    femaleVoiceName: localStorage.getItem('preferred_female_voice'),
-    maleVoiceName: localStorage.getItem('preferred_male_voice'),
-  };
-};
-
-/**
- * Save user voice preferences
- */
-export const saveVoicePreferences = (femaleVoiceName: string, maleVoiceName: string) => {
-  if (typeof window === 'undefined') return;
-  
-  localStorage.setItem('preferred_female_voice', femaleVoiceName);
-  localStorage.setItem('preferred_male_voice', maleVoiceName);
-};
-
-/**
- * Get voice by name
- */
-const getVoiceByName = (name: string): SpeechSynthesisVoice | null => {
-  const voices = getAvailableVoices();
-  return voices.find(v => v.name === name) || null;
-};
-
-/**
  * Speaks dialogue with appropriate emotion and voice variation
- * Uses gender information from dialogue data or user preferences
+ * Uses gender information from dialogue data
  * @param text - The text to speak
  * @param emotion - The emotion to convey
  * @param gender - Gender of the speaker ('male' or 'female')
@@ -334,30 +304,17 @@ export const speakDialogue = async (
   try {
     let selectedVoice: SpeechSynthesisVoice | null = null;
     
-    // Get user preferences
-    const { femaleVoiceName, maleVoiceName } = getUserVoicePreferences();
-    
-    // Determine which voice to use based on gender
+    // Select voice based on gender from dialogue data
     if (gender) {
+      const voices = getVoicesByGender();
       const isFemale = gender === 'female';
-      const preferredVoiceName = isFemale ? femaleVoiceName : maleVoiceName;
+      const targetVoices = isFemale ? voices.female : voices.male;
+      const fallbackVoices = isFemale ? voices.male : voices.female;
       
-      // Try to use user-selected voice first
-      if (preferredVoiceName) {
-        selectedVoice = getVoiceByName(preferredVoiceName);
-      }
-      
-      // Fallback to auto-detection if no preference or voice not found
-      if (!selectedVoice) {
-        const voices = getVoicesByGender();
-        const targetVoices = isFemale ? voices.female : voices.male;
-        const fallbackVoices = isFemale ? voices.male : voices.female;
-        
-        if (targetVoices.length > 0) {
-          selectedVoice = targetVoices[0];
-        } else if (fallbackVoices.length > 0) {
-          selectedVoice = fallbackVoices[0];
-        }
+      if (targetVoices.length > 0) {
+        selectedVoice = targetVoices[0];
+      } else if (fallbackVoices.length > 0) {
+        selectedVoice = fallbackVoices[0];
       }
     }
     

@@ -182,7 +182,7 @@ export function LessonForm({ initialData, onSubmit, isEditing = false }: LessonF
         <CardContent className="space-y-4">
           {vocabulary.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Chưa có từ vựng nào. Nhấn &quot;Thêm từ&quot; để bắt đầu.
+              Chưa có từ vựng nào. Nhấn "Thêm từ" để bắt đầu.
             </p>
           ) : (
             vocabulary.map((item, index) => (
@@ -256,7 +256,7 @@ export function LessonForm({ initialData, onSubmit, isEditing = false }: LessonF
         <CardContent className="space-y-4">
           {phrases.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Chưa có cụm từ nào. Nhấn &quot;Thêm cụm từ&quot; để bắt đầu.
+              Chưa có cụm từ nào. Nhấn "Thêm cụm từ" để bắt đầu.
             </p>
           ) : (
             phrases.map((item, index) => (
@@ -320,7 +320,7 @@ export function LessonForm({ initialData, onSubmit, isEditing = false }: LessonF
         <CardContent className="space-y-4">
           {dialogues.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Chưa có hội thoại nào. Nhấn &quot;Thêm câu&quot; để bắt đầu.
+              Chưa có hội thoại nào. Nhấn "Thêm câu" để bắt đầu.
             </p>
           ) : (
             dialogues.map((item, index) => (

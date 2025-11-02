@@ -6,6 +6,7 @@ import { Volume2 } from "lucide-react"
 import { Dialogue } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { speakDialogue } from "@/lib/utils/speech"
+import { VoiceSettings } from "./voice-settings"
 
 interface DialogueViewProps {
   dialogues: Dialogue[]
@@ -33,8 +34,14 @@ export function DialogueView({ dialogues }: DialogueViewProps) {
   const isLeftSide = (index: number) => index % 2 === 0
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
-      {dialogues.map((dialogue, index) => {
+    <div className="space-y-6 max-w-3xl mx-auto">
+      {/* Voice Settings Button */}
+      <div className="flex justify-end">
+        <VoiceSettings />
+      </div>
+
+      <div className="space-y-4">
+        {dialogues.map((dialogue, index) => {
         const onLeft = isLeftSide(index)
         
         return (
@@ -105,6 +112,7 @@ export function DialogueView({ dialogues }: DialogueViewProps) {
           </motion.div>
         )
       })}
+      </div>
     </div>
   )
 }

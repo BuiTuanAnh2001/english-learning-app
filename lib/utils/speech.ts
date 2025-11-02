@@ -290,7 +290,38 @@ export const speakEnglish = async (text: string, options: Omit<SpeechOptions, 'l
 };
 
 /**
+ * Get user-selected voices from localStorage
+ */
+const getUserVoicePreferences = (): { femaleVoiceName: string | null; maleVoiceName: string | null } => {
+  if (typeof window === 'undefined') return { femaleVoiceName: null, maleVoiceName: null };
+  
+  return {
+    femaleVoiceName: localStorage.getItem('preferred_female_voice'),
+    maleVoiceName: localStorage.getItem('preferred_male_voice'),
+  };
+};
+
+/**
+ * Save user voice preferences
+ */
+export const saveVoicePreferences = (femaleVoiceName: string, maleVoiceName: string) => {
+  if (typeof window === 'undefined') return;
+  
+  localStorage.setItem('preferred_female_voice', femaleVoiceName);
+  localStorage.setItem('preferred_male_voice', maleVoiceName);
+};
+
+/**
+ * Get voice by name
+ */
+const getVoiceByName = (name: string): SpeechSynthesisVoice | null => {
+  const voices = getAvailableVoices();
+  return voices.find(v => v.name === name) || null;
+};
+
+/**
  * Speaks dialogue with appropriate emotion and voice variation
+ * Uses user-selected voices from localStorage if available
  * @param text - The text to speak
  * @param emotion - The emotion to convey
  * @param speakerIndex - Index to determine voice variation (for alternating speakers)
@@ -301,34 +332,34 @@ export const speakDialogue = async (
   speakerIndex?: number
 ): Promise<void> => {
   try {
-    const voices = getVoicesByGender();
     let selectedVoice: SpeechSynthesisVoice | null = null;
     
-    // Log available voices (only once per page load)
-    if (typeof window !== 'undefined' && !(window as any).__voicesLogged) {
-      console.log('🎤 Available Voices for Dialogue:');
-      console.log('👨 Male voices:', voices.male.map(v => v.name));
-      console.log('👩 Female voices:', voices.female.map(v => v.name));
-      (window as any).__voicesLogged = true;
-    }
+    // Get user preferences
+    const { femaleVoiceName, maleVoiceName } = getUserVoicePreferences();
     
-    // Alternate between female and male voices for natural conversation
+    // Determine if this speaker should be female or male
     // Index 0, 2, 4... = Female (Speaker A)
     // Index 1, 3, 5... = Male (Speaker B)
     if (speakerIndex !== undefined) {
-      const isEven = speakerIndex % 2 === 0;
-      const targetGender = isEven ? 'Female' : 'Male';
-      const targetVoices = isEven ? voices.female : voices.male;
-      const fallbackVoices = isEven ? voices.male : voices.female;
+      const isFemale = speakerIndex % 2 === 0;
+      const preferredVoiceName = isFemale ? femaleVoiceName : maleVoiceName;
       
-      if (targetVoices.length > 0) {
-        selectedVoice = targetVoices[0];
-        console.log(`🎙️ Speaker ${speakerIndex} [${targetGender}]: "${text.substring(0, 30)}..." → ${selectedVoice.name}`);
-      } else if (fallbackVoices.length > 0) {
-        selectedVoice = fallbackVoices[0];
-        console.warn(`⚠️ Speaker ${speakerIndex}: No ${targetGender} voice, using ${selectedVoice.name}`);
-      } else {
-        console.error(`❌ Speaker ${speakerIndex}: No voices available!`);
+      // Try to use user-selected voice first
+      if (preferredVoiceName) {
+        selectedVoice = getVoiceByName(preferredVoiceName);
+      }
+      
+      // Fallback to auto-detection if no preference or voice not found
+      if (!selectedVoice) {
+        const voices = getVoicesByGender();
+        const targetVoices = isFemale ? voices.female : voices.male;
+        const fallbackVoices = isFemale ? voices.male : voices.female;
+        
+        if (targetVoices.length > 0) {
+          selectedVoice = targetVoices[0];
+        } else if (fallbackVoices.length > 0) {
+          selectedVoice = fallbackVoices[0];
+        }
       }
     }
     

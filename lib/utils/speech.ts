@@ -161,16 +161,19 @@ export const getBestEnglishVoice = (): SpeechSynthesisVoice | null => {
   return anyEnglish || null;
 };
 
+// Debug flag - set to true to see voice classification logs
+const DEBUG_VOICE_CLASSIFICATION = false;
+
 /**
  * Get voices categorized by gender (for more natural conversations)
  */
 export const getVoicesByGender = (): { male: SpeechSynthesisVoice[]; female: SpeechSynthesisVoice[] } => {
   const voices = getAvailableVoices();
-  // Include both English voices and Vietnamese voices that speak English
+  // Include Vietnamese voices speaking English
   const englishVoices = voices.filter(v => 
     v.lang.startsWith('en') || 
-    v.lang.startsWith('vi') || 
-    v.name.includes('Vietnam')
+    v.lang.startsWith('vi') ||
+    v.name.toLowerCase().includes('vietnam')
   );
   
   // Common male voice names
@@ -196,32 +199,68 @@ export const getVoicesByGender = (): { male: SpeechSynthesisVoice[]; female: Spe
   
   // Classify voices
   englishVoices.forEach(voice => {
-    const voiceLower = voice.name.toLowerCase();
-    const isMale = maleKeywords.some(keyword => voiceLower.includes(keyword.toLowerCase()));
-    const isFemale = femaleKeywords.some(keyword => voiceLower.includes(keyword.toLowerCase()));
+    const voiceName = voice.name;
+    const voiceLower = voiceName.toLowerCase();
     
-    // Debug log for problematic voices
-    if (voiceLower.includes('lisa') || voiceLower.includes('david')) {
-      console.log('🔍 Voice Classification Debug:', {
-        name: voice.name,
+    // Check each keyword independently with word boundary awareness
+    let isMale = false;
+    let isFemale = false;
+    
+    // Check for male indicators
+    for (const keyword of maleKeywords) {
+      const keywordLower = keyword.toLowerCase();
+      // Use word boundary check - keyword should be a separate word or part
+      if (voiceLower.includes(keywordLower)) {
+        isMale = true;
+        break;
+      }
+    }
+    
+    // Check for female indicators
+    for (const keyword of femaleKeywords) {
+      const keywordLower = keyword.toLowerCase();
+      if (voiceLower.includes(keywordLower)) {
+        isFemale = true;
+        break;
+      }
+    }
+    
+    // Debug log for ALL voices to see classification
+    const matchedMale = maleKeywords.filter(k => voiceLower.includes(k.toLowerCase()));
+    const matchedFemale = femaleKeywords.filter(k => voiceLower.includes(k.toLowerCase()));
+    
+    if (DEBUG_VOICE_CLASSIFICATION) {
+      console.log('🔍 Classifying:', {
+        name: voiceName,
         isMale,
         isFemale,
-        matchedMale: maleKeywords.filter(k => voiceLower.includes(k.toLowerCase())),
-        matchedFemale: femaleKeywords.filter(k => voiceLower.includes(k.toLowerCase()))
+        matchedMale,
+        matchedFemale
       });
     }
     
     // Prioritize female if voice has female indicators
-    if (isFemale) {
+    // If both matched, prioritize female (most common issue)
+    if (isFemale && !isMale) {
       female.push(voice);
-    } else if (isMale) {
+      if (DEBUG_VOICE_CLASSIFICATION) console.log(`✅ → Female: ${voiceName}`);
+    } else if (isMale && !isFemale) {
       male.push(voice);
+      if (DEBUG_VOICE_CLASSIFICATION) console.log(`✅ → Male: ${voiceName}`);
+    } else if (isFemale && isMale) {
+      // If both matched, check which has more matches
+      if (matchedFemale.length > matchedMale.length) {
+        female.push(voice);
+        if (DEBUG_VOICE_CLASSIFICATION) console.log(`⚠️ → Female (both matched, more female keywords): ${voiceName}`);
+      } else {
+        male.push(voice);
+        if (DEBUG_VOICE_CLASSIFICATION) console.log(`⚠️ → Male (both matched, more male keywords): ${voiceName}`);
+      }
     } else {
       unclassified.push(voice);
+      if (DEBUG_VOICE_CLASSIFICATION) console.log(`❓ → Unclassified: ${voiceName}`);
     }
-  });
-  
-  // If we don't have enough voices in either category, distribute unclassified voices
+  });  // If we don't have enough voices in either category, distribute unclassified voices
   if (male.length === 0 && unclassified.length > 0) {
     male.push(...unclassified.slice(0, Math.ceil(unclassified.length / 2)));
     unclassified.splice(0, Math.ceil(unclassified.length / 2));
@@ -265,37 +304,31 @@ export const speakDialogue = async (
     const voices = getVoicesByGender();
     let selectedVoice: SpeechSynthesisVoice | null = null;
     
-    // Debug logging
-    console.log('🎤 Voice Debug:', {
-      speakerIndex,
-      maleVoices: voices.male.map(v => v.name),
-      femaleVoices: voices.female.map(v => v.name)
-    });
+    // Log available voices (only once per page load)
+    if (typeof window !== 'undefined' && !(window as any).__voicesLogged) {
+      console.log('🎤 Available Voices for Dialogue:');
+      console.log('👨 Male voices:', voices.male.map(v => v.name));
+      console.log('👩 Female voices:', voices.female.map(v => v.name));
+      (window as any).__voicesLogged = true;
+    }
     
     // Alternate between female and male voices for natural conversation
     // Index 0, 2, 4... = Female (Speaker A)
     // Index 1, 3, 5... = Male (Speaker B)
     if (speakerIndex !== undefined) {
-      if (speakerIndex % 2 === 0) {
-        // Even index = Female voice
-        if (voices.female.length > 0) {
-          selectedVoice = voices.female[0];
-          console.log(`✅ Speaker ${speakerIndex} (Female): ${selectedVoice.name}`);
-        } else if (voices.male.length > 0) {
-          // Fallback to male if no female available
-          selectedVoice = voices.male[0];
-          console.log(`⚠️ Speaker ${speakerIndex} (Fallback Male): ${selectedVoice.name}`);
-        }
+      const isEven = speakerIndex % 2 === 0;
+      const targetGender = isEven ? 'Female' : 'Male';
+      const targetVoices = isEven ? voices.female : voices.male;
+      const fallbackVoices = isEven ? voices.male : voices.female;
+      
+      if (targetVoices.length > 0) {
+        selectedVoice = targetVoices[0];
+        console.log(`🎙️ Speaker ${speakerIndex} [${targetGender}]: "${text.substring(0, 30)}..." → ${selectedVoice.name}`);
+      } else if (fallbackVoices.length > 0) {
+        selectedVoice = fallbackVoices[0];
+        console.warn(`⚠️ Speaker ${speakerIndex}: No ${targetGender} voice, using ${selectedVoice.name}`);
       } else {
-        // Odd index = Male voice
-        if (voices.male.length > 0) {
-          selectedVoice = voices.male[0];
-          console.log(`✅ Speaker ${speakerIndex} (Male): ${selectedVoice.name}`);
-        } else if (voices.female.length > 0) {
-          // Fallback to female if no male available
-          selectedVoice = voices.female[0];
-          console.log(`⚠️ Speaker ${speakerIndex} (Fallback Female): ${selectedVoice.name}`);
-        }
+        console.error(`❌ Speaker ${speakerIndex}: No voices available!`);
       }
     }
     

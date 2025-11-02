@@ -20,8 +20,9 @@ export function DialogueView({ dialogues }: DialogueViewProps) {
 
     try {
       setSpeakingIndex(index)
-      // Use speakDialogue with emotion and speaker index for voice variation
-      await speakDialogue(dialogue.text, dialogue.emotion, index)
+      // Use gender from dialogue data, or fallback to alternating pattern
+      const gender = dialogue.gender || (index % 2 === 0 ? 'female' : 'male')
+      await speakDialogue(dialogue.text, dialogue.emotion, gender)
     } catch (error) {
       console.error('Error speaking dialogue:', error)
     } finally {

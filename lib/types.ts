@@ -22,6 +22,7 @@ export interface Dialogue {
   text: string;
   translation?: string;
   emotion?: string; // e.g., 'happy', 'surprised', 'formal'
+  gender?: 'male' | 'female'; // Gender of the speaker for voice selection
 }
 
 export interface Lesson {

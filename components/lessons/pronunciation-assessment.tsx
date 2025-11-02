@@ -82,7 +82,7 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
             <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Speech Recognition Not Supported</h3>
             <p className="text-muted-foreground mb-4">
-              Your browser doesn't support speech recognition. Please try using Chrome, Edge, or Safari.
+              Your browser doesn&apos;t support speech recognition. Please try using Chrome, Edge, or Safari.
             </p>
             <Button onClick={onClose}>Close</Button>
           </div>
@@ -316,8 +316,8 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
             <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <h4 className="font-semibold mb-2">How it works:</h4>
               <ol className="space-y-2 text-sm">
-                <li>1. Click "Listen" to hear the original pronunciation</li>
-                <li>2. Click "Record Your Voice" and speak the sentence clearly</li>
+                <li>1. Click &quot;Listen&quot; to hear the original pronunciation</li>
+                <li>2. Click &quot;Record Your Voice&quot; and speak the sentence clearly</li>
                 <li>3. Get instant feedback on your pronunciation accuracy</li>
                 <li>4. Practice until you reach 90%+ accuracy!</li>
               </ol>

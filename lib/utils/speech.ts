@@ -321,15 +321,15 @@ const getVoiceByName = (name: string): SpeechSynthesisVoice | null => {
 
 /**
  * Speaks dialogue with appropriate emotion and voice variation
- * Uses user-selected voices from localStorage if available
+ * Uses gender information from dialogue data or user preferences
  * @param text - The text to speak
  * @param emotion - The emotion to convey
- * @param speakerIndex - Index to determine voice variation (for alternating speakers)
+ * @param gender - Gender of the speaker ('male' or 'female')
  */
 export const speakDialogue = async (
   text: string, 
   emotion?: string,
-  speakerIndex?: number
+  gender?: 'male' | 'female'
 ): Promise<void> => {
   try {
     let selectedVoice: SpeechSynthesisVoice | null = null;
@@ -337,11 +337,9 @@ export const speakDialogue = async (
     // Get user preferences
     const { femaleVoiceName, maleVoiceName } = getUserVoicePreferences();
     
-    // Determine if this speaker should be female or male
-    // Index 0, 2, 4... = Female (Speaker A)
-    // Index 1, 3, 5... = Male (Speaker B)
-    if (speakerIndex !== undefined) {
-      const isFemale = speakerIndex % 2 === 0;
+    // Determine which voice to use based on gender
+    if (gender) {
+      const isFemale = gender === 'female';
       const preferredVoiceName = isFemale ? femaleVoiceName : maleVoiceName;
       
       // Try to use user-selected voice first

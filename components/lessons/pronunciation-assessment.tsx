@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Volume2, X, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,8 +25,14 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const isSupported = isSpeechRecognitionSupported();
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const handlePlayOriginal = async () => {
     setIsPlaying(true);
@@ -68,31 +75,31 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
     return 'bg-red-500';
   };
 
-  if (!isSupported) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-        style={{ zIndex: 99999 }}
-        onClick={onClose}
-      >
-        <Card className="max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Speech Recognition Not Supported</h3>
-            <p className="text-muted-foreground mb-4">
-              Your browser doesn&apos;t support speech recognition. Please try using Chrome, Edge, or Safari.
-            </p>
-            <Button onClick={onClose}>Close</Button>
-          </div>
-        </Card>
-      </motion.div>
-    );
+  if (!mounted) {
+    return null;
   }
 
-  return (
+  const modalContent = !isSupported ? (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      style={{ zIndex: 99999 }}
+      onClick={onClose}
+    >
+      <Card className="max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Speech Recognition Not Supported</h3>
+          <p className="text-muted-foreground mb-4">
+            Your browser doesn&apos;t support speech recognition. Please try using Chrome, Edge, or Safari.
+          </p>
+          <Button onClick={onClose}>Close</Button>
+        </div>
+      </Card>
+    </motion.div>
+  ) : (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -377,4 +384,6 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 }

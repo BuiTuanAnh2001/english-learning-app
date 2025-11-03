@@ -178,7 +178,10 @@ export const assessPronunciation = (
 };
 
 // Start recording and return promise with result
-export const startPronunciationTest = (expectedText: string): Promise<PronunciationResult> => {
+export const startPronunciationTest = (
+  expectedText: string, 
+  retryCount: number = 0
+): Promise<PronunciationResult> => {
   return new Promise((resolve, reject) => {
     const recognition = getSpeechRecognition();
     
@@ -186,25 +189,72 @@ export const startPronunciationTest = (expectedText: string): Promise<Pronunciat
       reject(new Error('Speech recognition is not supported in this browser'));
       return;
     }
+
+    let hasResult = false;
     
     recognition.onresult = (event: any) => {
+      hasResult = true;
       const recognizedText = event.results[0][0].transcript;
       const result = assessPronunciation(expectedText, recognizedText);
       resolve(result);
     };
     
     recognition.onerror = (event: any) => {
-      reject(new Error(`Speech recognition error: ${event.error}`));
+      const errorType = event.error;
+      let errorMessage = '';
+      
+      switch (errorType) {
+        case 'network':
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+          break;
+        case 'not-allowed':
+        case 'permission-denied':
+          errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings.';
+          break;
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please speak clearly and try again.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'No microphone found. Please connect a microphone and try again.';
+          break;
+        case 'aborted':
+          errorMessage = 'Recording was aborted. Please try again.';
+          break;
+        default:
+          errorMessage = `Speech recognition error: ${errorType}. Please try again.`;
+      }
+      
+      reject(new Error(errorMessage));
     };
     
     recognition.onend = () => {
-      // Recognition ended without result
+      // If ended without result and no error was triggered, treat as no-speech
+      if (!hasResult) {
+        reject(new Error('No speech detected. Please speak clearly and try again.'));
+      }
     };
+    
+    // Set timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      try {
+        recognition.stop();
+      } catch (e) {
+        // ignore
+      }
+      if (!hasResult) {
+        reject(new Error('Recording timeout. Please try again.'));
+      }
+    }, 10000); // 10 second timeout
     
     try {
       recognition.start();
-    } catch (error) {
-      reject(error);
+    } catch (error: any) {
+      clearTimeout(timeout);
+      if (error.message?.includes('already started')) {
+        reject(new Error('Recording is already in progress. Please wait.'));
+      } else {
+        reject(error);
+      }
     }
   });
 };

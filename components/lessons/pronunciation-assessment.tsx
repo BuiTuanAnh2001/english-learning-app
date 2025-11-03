@@ -177,11 +177,58 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
                 exit={{ opacity: 0, y: -10 }}
                 className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg"
               >
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-3">
                   <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-red-600">Error</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
+                  <div className="flex-1">
+                    <p className="font-semibold text-red-600 mb-1">Recording Error</p>
+                    <p className="text-sm mb-3">{error}</p>
+                    
+                    {/* Troubleshooting tips */}
+                    {error.includes('Microphone permission') && (
+                      <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded text-sm">
+                        <p className="font-semibold mb-2">How to enable microphone:</p>
+                        <ul className="space-y-1 list-disc list-inside">
+                          <li>Look for the microphone icon in your browser&apos;s address bar</li>
+                          <li>Click it and select &quot;Allow&quot;</li>
+                          <li>Refresh the page if needed</li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {error.includes('Network error') && (
+                      <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded text-sm">
+                        <p className="font-semibold mb-2">Troubleshooting tips:</p>
+                        <ul className="space-y-1 list-disc list-inside">
+                          <li>Check your internet connection</li>
+                          <li>Try disabling VPN if you&apos;re using one</li>
+                          <li>Make sure your browser is up to date</li>
+                          <li>Try using Chrome or Edge browser</li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {error.includes('No speech detected') && (
+                      <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded text-sm">
+                        <p className="font-semibold mb-2">Tips for better recognition:</p>
+                        <ul className="space-y-1 list-disc list-inside">
+                          <li>Speak clearly and at normal volume</li>
+                          <li>Make sure your microphone is working</li>
+                          <li>Reduce background noise</li>
+                          <li>Position microphone closer to your mouth</li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <Button
+                      onClick={handleStartRecording}
+                      disabled={isRecording}
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                    >
+                      <Mic className="w-4 h-4 mr-2" />
+                      Try Again
+                    </Button>
                   </div>
                 </div>
               </motion.div>

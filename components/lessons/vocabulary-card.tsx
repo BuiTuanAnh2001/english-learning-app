@@ -37,6 +37,7 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
   }
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -145,17 +146,18 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
           </CardContent>
         </Card>
       </motion.div>
-
-      {/* Pronunciation Assessment Modal */}
-      <AnimatePresence>
-        {showPronunciation && (
-          <PronunciationAssessment
-            text={vocabulary.word}
-            translation={vocabulary.meaning}
-            onClose={() => setShowPronunciation(false)}
-          />
-        )}
-      </AnimatePresence>
     </motion.div>
+
+    {/* Pronunciation Assessment Modal - Outside card hierarchy */}
+    {showPronunciation && (
+      <AnimatePresence>
+        <PronunciationAssessment
+          text={vocabulary.word}
+          translation={vocabulary.meaning}
+          onClose={() => setShowPronunciation(false)}
+        />
+      </AnimatePresence>
+    )}
+    </>
   )
 }

@@ -74,7 +74,8 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+        style={{ zIndex: 99999 }}
         onClick={onClose}
       >
         <Card className="max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
@@ -96,7 +97,8 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      style={{ zIndex: 99999 }}
       onClick={onClose}
     >
       <motion.div
@@ -104,7 +106,8 @@ export function PronunciationAssessment({ text, translation, onClose }: Pronunci
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="max-w-2xl w-full"
+        className="max-w-2xl w-full relative"
+        style={{ zIndex: 100000 }}
       >
         <Card className="p-6">
           <div className="flex justify-between items-start mb-6">

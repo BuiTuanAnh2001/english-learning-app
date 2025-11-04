@@ -139,10 +139,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                     )}
                   </Button>
                 </div>
-
-                <p className="text-xs text-muted-foreground text-center pt-2">
-                  💡 Mật khẩu demo: <code className="bg-muted px-2 py-1 rounded">bta@23901</code>
-                </p>
               </form>
             </CardContent>
           </Card>

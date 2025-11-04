@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Facebook, Twitter, Instagram, Mail } from "lucide-react"
+import { PageViewCounter } from "@/components/analytics/page-view-counter"
 
 export function Footer() {
   return (
@@ -92,8 +93,13 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Vocaplanet. All rights reserved.</p>
+        <div className="mt-8 pt-8 border-t">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground text-center md:text-left">
+              &copy; {new Date().getFullYear()} Vocaplanet. All rights reserved.
+            </p>
+            <PageViewCounter />
+          </div>
         </div>
       </div>
     </footer>

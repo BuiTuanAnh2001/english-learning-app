@@ -1,10 +1,10 @@
 'use client'
 
 import { useParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
-import { ChevronLeft, ChevronRight, Clock, CheckCircle, Award } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight, Clock, CheckCircle, Award, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,6 +22,8 @@ export default function LessonDetailPage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [loading, setLoading] = useState(true)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     initializeStorage()
@@ -35,6 +37,28 @@ export default function LessonDetailPage() {
     const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '[]')
     setIsCompleted(completedLessons.includes(lessonId))
   }, [lessonId])
+
+  // Show/hide scroll to bottom button
+  useEffect(() => {
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight
+      const documentHeight = document.documentElement.scrollHeight
+      const scrollTop = window.scrollY
+      const scrollPercentage = (scrollTop / (documentHeight - windowHeight)) * 100
+      
+      // Show button when not at bottom (less than 90% scrolled)
+      setShowScrollButton(scrollPercentage < 90)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    handleScroll() // Check initial state
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   const toggleCompletion = () => {
     const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '[]')
@@ -236,6 +260,27 @@ export default function LessonDetailPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Scroll to Bottom Button */}
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={scrollToBottom}
+            className="fixed bottom-8 right-8 z-50 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 rounded-full shadow-2xl shadow-blue-500/50 hover:shadow-3xl hover:shadow-blue-500/60 transition-all duration-300"
+            aria-label="Scroll to bottom"
+          >
+            <ArrowDown className="w-6 h-6 animate-bounce" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom reference for scrolling */}
+      <div ref={bottomRef} />
     </div>
   )
 }

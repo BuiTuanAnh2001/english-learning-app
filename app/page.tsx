@@ -85,8 +85,8 @@ export default function Home() {
               className="text-base md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed"
               variants={fadeInUp}
             >
-              Nâng cao khả năng giao tiếp tiếng Anh với <span className="font-bold text-blue-600 dark:text-blue-400">820+ từ vựng</span>, 
-              bài học tương tác, thực hành thực tế và phương pháp học hiện đại
+              Nâng cao khả năng giao tiếp tiếng Anh với <span className="font-bold text-blue-600 dark:text-blue-400">phương pháp học thông minh</span>, 
+              bài học tương tác, thực hành phát âm AI và nội dung được cập nhật liên tục
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-4"

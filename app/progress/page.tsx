@@ -10,12 +10,17 @@ import { lessons, categories } from "@/lib/data/lessons"
 import { getLevelColor, getLevelLabel } from "@/lib/utils"
 
 export default function ProgressPage() {
+  // Get completed lessons from localStorage
+  const completedLessonIds = typeof window !== 'undefined' 
+    ? JSON.parse(localStorage.getItem('completedLessons') || '[]')
+    : []
+  
   // Calculate statistics
-  const completedLessons = lessons.filter((l) => l.completed).length
+  const completedLessons = completedLessonIds.length
   const totalLessons = lessons.length
   const totalMinutes = lessons.reduce((acc, lesson) => {
     const minutes = parseInt(lesson.duration)
-    return acc + (lesson.completed ? minutes : 0)
+    return acc + (completedLessonIds.includes(lesson.id) ? minutes : 0)
   }, 0)
   const streak = 7 // Mock streak
 
@@ -49,7 +54,7 @@ export default function ProgressPage() {
   // Calculate progress by category
   const categoryProgress = categories.map((category) => {
     const categoryLessons = lessons.filter((l) => l.category === category.id)
-    const completed = categoryLessons.filter((l) => l.completed).length
+    const completed = categoryLessons.filter((l) => completedLessonIds.includes(l.id)).length
     const total = categoryLessons.length
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
@@ -61,9 +66,9 @@ export default function ProgressPage() {
     }
   })
 
-  // Recent lessons (last 5)
-  const recentLessons = [...lessons]
-    .sort((a, b) => b.progress - a.progress)
+  // Recent completed lessons (last 5)
+  const recentLessons = lessons
+    .filter(l => completedLessonIds.includes(l.id))
     .slice(0, 5)
 
   return (

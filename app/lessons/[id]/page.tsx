@@ -21,6 +21,7 @@ export default function LessonDetailPage() {
   const [lesson, setLesson] = useState<Lesson | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [loading, setLoading] = useState(true)
+  const [isCompleted, setIsCompleted] = useState(false)
 
   useEffect(() => {
     initializeStorage()
@@ -29,7 +30,27 @@ export default function LessonDetailPage() {
     setLesson(foundLesson)
     setLessons(allLessons)
     setLoading(false)
+    
+    // Check if lesson is marked as completed
+    const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '[]')
+    setIsCompleted(completedLessons.includes(lessonId))
   }, [lessonId])
+
+  const toggleCompletion = () => {
+    const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '[]')
+    
+    if (isCompleted) {
+      // Remove from completed
+      const updated = completedLessons.filter((id: string) => id !== lessonId)
+      localStorage.setItem('completedLessons', JSON.stringify(updated))
+      setIsCompleted(false)
+    } else {
+      // Add to completed
+      completedLessons.push(lessonId)
+      localStorage.setItem('completedLessons', JSON.stringify(completedLessons))
+      setIsCompleted(true)
+    }
+  }
 
   if (loading) {
     return (
@@ -80,22 +101,50 @@ export default function LessonDetailPage() {
         className="mb-8"
       >
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl md:text-4xl font-bold mb-3">{lesson.title}</h1>
             <p className="text-lg text-muted-foreground">{lesson.description}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge className={getLevelColor(lesson.level)}>
-              {getLevelLabel(lesson.level)}
-            </Badge>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Badge className={getLevelColor(lesson.level)}>
+                {getLevelLabel(lesson.level)}
+              </Badge>
+            </div>
+            <Button
+              onClick={toggleCompletion}
+              variant={isCompleted ? "default" : "outline"}
+              className={`${isCompleted 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30' 
+                : 'hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400 hover:border-green-500'
+              } rounded-xl transition-all duration-300`}
+            >
+              {isCompleted ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Đã hoàn thành
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Đánh dấu hoàn thành
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            <span>{lesson.duration}</span>
+            <span>{lesson.duration} phút</span>
           </div>
+          {isCompleted && (
+            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+              <Award className="w-4 h-4" />
+              <span className="font-medium">Hoàn thành</span>
+            </div>
+          )}
         </div>
       </motion.div>
 

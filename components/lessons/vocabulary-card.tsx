@@ -48,14 +48,14 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
       onClick={() => setIsFlipped(!isFlipped)}
     >
       <motion.div
-        className="relative w-full h-full cursor-pointer shadow-lg hover:shadow-2xl transition-shadow duration-300"
+        className="relative w-full h-full cursor-pointer rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6, ease: "easeInOut" }}
         style={{ transformStyle: "preserve-3d" }}
       >
         {/* Front - Enhanced European Style */}
         <Card
-          className="absolute inset-0 bg-white dark:bg-slate-900 border-0 overflow-hidden"
+          className="absolute inset-0 bg-white dark:bg-slate-900 border-0 overflow-hidden rounded-2xl"
           style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
         >
           <CardContent className="p-0 h-full flex flex-col">
@@ -124,7 +124,7 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
 
         {/* Back */}
         <Card
-          className="absolute inset-0 bg-gradient-to-br from-accent/10 to-primary/10"
+          className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl border-0"
           style={{ 
             backfaceVisibility: "hidden", 
             WebkitBackfaceVisibility: "hidden",
@@ -134,16 +134,16 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
           <CardContent className="p-6 h-full flex flex-col justify-center">
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Nghĩa:</p>
-                <p className="text-lg font-semibold">{vocabulary.meaning}</p>
+                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">NGHĨA</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-white">{vocabulary.meaning}</p>
               </div>
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground mb-2">Ví dụ:</p>
-                <p className="text-sm italic">{vocabulary.example}</p>
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2">VÍ DỤ</p>
+                <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 italic">&quot;{vocabulary.example}&quot;</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-4 text-center">
-              Nhấn để trở lại
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-6 text-center font-medium">
+              Nhấn để lật lại
             </p>
           </CardContent>
         </Card>

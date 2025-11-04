@@ -41,26 +41,27 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="h-64"
+      transition={{ delay: index * 0.1, duration: 0.4 }}
+      whileHover={{ y: -4 }}
+      className="h-72"
       style={{ perspective: "1000px" }}
       onClick={() => setIsFlipped(!isFlipped)}
     >
       <motion.div
-        className="relative w-full h-full cursor-pointer"
+        className="relative w-full h-full cursor-pointer shadow-lg hover:shadow-2xl transition-shadow duration-300"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6, ease: "easeInOut" }}
         style={{ transformStyle: "preserve-3d" }}
       >
-        {/* Front */}
+        {/* Front - Enhanced European Style */}
         <Card
-          className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden"
+          className="absolute inset-0 bg-white dark:bg-slate-900 border-0 overflow-hidden"
           style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
         >
           <CardContent className="p-0 h-full flex flex-col">
-            {/* Image Section */}
+            {/* Image Section - Larger and more prominent */}
             {vocabulary.imageUrl && (
-              <div className="relative w-full h-32 bg-muted">
+              <div className="relative w-full h-40 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
                 <Image
                   src={vocabulary.imageUrl}
                   alt={vocabulary.word}
@@ -72,15 +73,16 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
                     target.style.display = 'none';
                   }}
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
               </div>
             )}
             
             {/* Content Section */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2">
+              <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
                 {vocabulary.word}
               </h3>
-              <p className="text-sm text-muted-foreground mb-3">{vocabulary.pronunciation}</p>
+              <p className="text-sm font-medium text-muted-foreground mb-4">{vocabulary.pronunciation}</p>
               
               {/* Tags */}
               {vocabulary.tags && vocabulary.tags.length > 0 && (

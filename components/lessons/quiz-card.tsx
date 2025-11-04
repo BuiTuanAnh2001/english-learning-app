@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle, XCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,16 +31,21 @@ export function QuizCard({
   const [fillBlankAnswer, setFillBlankAnswer] = useState<string>('')
   const [hasAnswered, setHasAnswered] = useState(false)
 
+  // Reset state when question changes
+  useEffect(() => {
+    setSelectedAnswer(userAnswer as string || '')
+    setFillBlankAnswer('')
+    setHasAnswered(false)
+  }, [question.id, userAnswer])
+
   const handleMultipleChoiceAnswer = (option: string) => {
-    if (disabled || hasAnswered) return
+    if (disabled) return
     setSelectedAnswer(option)
-    setHasAnswered(true)
     onAnswer(option)
   }
 
   const handleFillBlankSubmit = () => {
-    if (disabled || hasAnswered || !fillBlankAnswer.trim()) return
-    setHasAnswered(true)
+    if (disabled || !fillBlankAnswer.trim()) return
     onAnswer(fillBlankAnswer.trim())
   }
 
@@ -102,13 +107,13 @@ export function QuizCard({
               {question.options.map((option, index) => (
                 <motion.button
                   key={index}
-                  whileHover={!disabled && !hasAnswered ? { scale: 1.02 } : {}}
-                  whileTap={!disabled && !hasAnswered ? { scale: 0.98 } : {}}
+                  whileHover={!disabled ? { scale: 1.02 } : {}}
+                  whileTap={!disabled ? { scale: 0.98 } : {}}
                   onClick={() => handleMultipleChoiceAnswer(option)}
-                  disabled={disabled || hasAnswered}
+                  disabled={disabled}
                   className={`w-full p-4 text-left border-2 rounded-lg transition-all ${getAnswerClassName(
                     option
-                  )} ${disabled || hasAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  )} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{option}</span>
@@ -134,13 +139,13 @@ export function QuizCard({
               {question.options.map((option, index) => (
                 <motion.button
                   key={index}
-                  whileHover={!disabled && !hasAnswered ? { scale: 1.02 } : {}}
-                  whileTap={!disabled && !hasAnswered ? { scale: 0.98 } : {}}
+                  whileHover={!disabled ? { scale: 1.02 } : {}}
+                  whileTap={!disabled ? { scale: 0.98 } : {}}
                   onClick={() => handleMultipleChoiceAnswer(option)}
-                  disabled={disabled || hasAnswered}
+                  disabled={disabled}
                   className={`p-6 text-center border-2 rounded-lg font-semibold text-lg transition-all ${getAnswerClassName(
                     option
-                  )} ${disabled || hasAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  )} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <span>{option}</span>

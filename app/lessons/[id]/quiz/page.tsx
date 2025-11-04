@@ -66,13 +66,7 @@ export default function QuizPage() {
     const newAnswers = new Map(answers)
     newAnswers.set(questions[currentQuestionIndex].id, answer)
     setAnswers(newAnswers)
-
-    // Auto advance to next question after a short delay
-    setTimeout(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1)
-      }
-    }, 500)
+    // Removed auto-advance - user must click Next button
   }
 
   const handlePrevious = () => {

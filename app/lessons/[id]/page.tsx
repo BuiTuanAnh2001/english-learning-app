@@ -101,36 +101,14 @@ export default function LessonDetailPage() {
         className="mb-8"
       >
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-          <div className="flex-1">
+          <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-3">{lesson.title}</h1>
             <p className="text-lg text-muted-foreground">{lesson.description}</p>
           </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap gap-2">
-              <Badge className={getLevelColor(lesson.level)}>
-                {getLevelLabel(lesson.level)}
-              </Badge>
-            </div>
-            <Button
-              onClick={toggleCompletion}
-              variant={isCompleted ? "default" : "outline"}
-              className={`${isCompleted 
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30' 
-                : 'hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400 hover:border-green-500'
-              } rounded-xl transition-all duration-300`}
-            >
-              {isCompleted ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Đã hoàn thành
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Đánh dấu hoàn thành
-                </>
-              )}
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            <Badge className={getLevelColor(lesson.level)}>
+              {getLevelLabel(lesson.level)}
+            </Badge>
           </div>
         </div>
 
@@ -139,12 +117,6 @@ export default function LessonDetailPage() {
             <Clock className="w-4 h-4" />
             <span>{lesson.duration} phút</span>
           </div>
-          {isCompleted && (
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <Award className="w-4 h-4" />
-              <span className="font-medium">Hoàn thành</span>
-            </div>
-          )}
         </div>
       </motion.div>
 
@@ -245,14 +217,21 @@ export default function LessonDetailPage() {
 
           <div className="flex gap-2">
             <Link href={`/lessons/${lessonId}/quiz`}>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500">
                 <Award className="w-4 h-4" />
                 Làm Quiz
               </Button>
             </Link>
-            <Button className="gap-2">
+            <Button 
+              onClick={toggleCompletion}
+              variant={isCompleted ? "default" : "outline"}
+              className={`gap-2 ${isCompleted 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30' 
+                : 'hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400 hover:border-green-500'
+              } rounded-xl transition-all duration-300`}
+            >
               <CheckCircle className="w-4 h-4" />
-              Đánh dấu hoàn thành
+              {isCompleted ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
             </Button>
           </div>
         </div>

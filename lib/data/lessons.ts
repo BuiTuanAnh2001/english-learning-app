@@ -28,7 +28,7 @@ export const categories: Category[] = [
     name: 'Dành cho người mới',
     description: 'Các bài học cơ bản cho người mới bắt đầu',
     icon: '🎯',
-    lessonCount: 0,
+    lessonCount: 5,
   },
 ];
 
@@ -73,6 +73,36 @@ export const lessons: Lesson[] = [
         pronunciation: '/ɡʊdˈbaɪ/',
         meaning: 'Tạm biệt',
         example: 'It was nice talking to you. Goodbye!',
+      },
+      {
+        word: 'Please',
+        pronunciation: '/pliːz/',
+        meaning: 'Xin vui lòng',
+        example: 'Could you please help me with this?'
+      },
+      {
+        word: 'Thank you',
+        pronunciation: '/θæŋk juː/',
+        meaning: 'Cảm ơn',
+        example: 'Thank you for your help!'
+      },
+      {
+        word: 'Sorry',
+        pronunciation: '/ˈsɔːri/',
+        meaning: 'Xin lỗi',
+        example: 'I\'m sorry for the mistake.'
+      },
+      {
+        word: 'Excuse me',
+        pronunciation: '/ɪkˈskjuːz miː/',
+        meaning: 'Xin lỗi (để thu hút sự chú ý)',
+        example: 'Excuse me, could you help me with this?'
+      },
+      {
+        word: 'Could you repeat that?',
+        pronunciation: '/kəd juː rɪˈpiːt ðæt/',
+        meaning: 'Bạn có thể nhắc lại điều đó không?',
+        example: 'Could you repeat that, please?'
       },
     ],
     phrases: [

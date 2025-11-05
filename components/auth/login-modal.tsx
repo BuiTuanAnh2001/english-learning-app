@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Lock, LogIn, AlertCircle } from 'lucide-react'
+import { Lock, LogIn, AlertCircle, CircleDot, Circle, Loader } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LoginModalProps {
@@ -135,13 +135,13 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                         >
-                          <LogIn className="w-4 h-4" />
+                          <Loader className="w-4 h-4" />
                         </motion.div>
-                        Đang xác thực...
+                        Checking...
                       </>
                     ) : (
                       <>
-                        <LogIn className="w-4 h-4" />
+                        {/* <LogIn className="w-4 h-4" /> */}
                         Đăng nhập
                       </>
                     )}

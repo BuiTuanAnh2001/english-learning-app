@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '@/lib/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +19,13 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { login } = useAuth()
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,15 +49,16 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        style={{ zIndex: 9999 }}
         onClick={onClose}
       >
         <motion.div
@@ -146,4 +154,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       </motion.div>
     </AnimatePresence>
   )
+
+  return createPortal(modalContent, document.body)
 }

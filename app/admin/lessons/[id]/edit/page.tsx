@@ -6,47 +6,70 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LessonForm } from '@/components/admin/lesson-form'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import { getLessonById, updateLesson, updateCategoryLessonCount } from '@/lib/services/storage'
+import { getLessonById, updateLesson, getCategories } from '@/lib/services/api'
 import { Lesson } from '@/lib/types'
 
 function EditLessonPageContent() {
   const router = useRouter()
   const params = useParams()
   const [lesson, setLesson] = useState<Lesson | null>(null)
+  const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const id = params.id as string
-    const foundLesson = getLessonById(id)
-    
-    if (!foundLesson) {
-      alert('Không tìm thấy bài học')
-      router.push('/admin')
-      return
+    const fetchData = async () => {
+      try {
+        const id = params.id as string
+        const [foundLesson, cats] = await Promise.all([
+          getLessonById(id),
+          getCategories()
+        ])
+        setLesson(foundLesson)
+        setCategories(cats)
+      } catch (err) {
+        setError('Không tìm thấy bài học')
+        console.error('Error fetching lesson:', err)
+        setTimeout(() => router.push('/admin'), 2000)
+      } finally {
+        setLoading(false)
+      }
     }
-    
-    setLesson(foundLesson)
-    setLoading(false)
+
+    fetchData()
   }, [params.id, router])
 
-  const handleSubmit = (data: Omit<Lesson, 'id'>) => {
+  const handleSubmit = async (data: Omit<Lesson, 'id'>) => {
     try {
       const id = params.id as string
-      const oldCategory = lesson?.category
-      const updatedLesson = updateLesson(id, data)
       
-      if (updatedLesson) {
-        // Update lesson count for both old and new categories if changed
-        if (oldCategory && oldCategory !== data.category) {
-          updateCategoryLessonCount(oldCategory)
-        }
-        updateCategoryLessonCount(data.category)
-        
-        alert('Bài học đã được cập nhật thành công!')
-        router.push('/admin')
-      } else {
-        alert('Có lỗi xảy ra khi cập nhật bài học')
+      // Find categoryId from category name
+      const categoryName = typeof data.category === 'string' ? data.category : (data.category as any)?.name
+      const category = categories.find(c => c.name === categoryName)
+      
+      if (!category) {
+        alert('Không tìm thấy category. Vui lòng chọn lại.')
+        return
       }
+
+      // Transform data to match API format
+      const lessonData = {
+        title: data.title,
+        description: data.description,
+        level: data.level,
+        duration: data.duration,
+        categoryId: category.id,
+        thumbnailUrl: data.thumbnailUrl,
+        vocabulary: data.vocabulary || [],
+        phrases: data.phrases || [],
+        dialogues: data.dialogues || [],
+        objectives: data.objectives || [],
+        tips: data.tips || []
+      }
+
+      await updateLesson(id, lessonData as any)
+      alert('Bài học đã được cập nhật thành công!')
+      router.push('/admin')
     } catch (error) {
       console.error('Error updating lesson:', error)
       alert('Có lỗi xảy ra khi cập nhật bài học')
@@ -56,13 +79,24 @@ function EditLessonPageContent() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Đang tải...</div>
+        <div className="text-center py-20">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+        </div>
       </div>
     )
   }
 
-  if (!lesson) {
-    return null
+  if (error || !lesson) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-20">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <p className="text-lg mb-4">{error || 'Không tìm thấy bài học'}</p>
+          <Button onClick={() => router.push('/admin')}>Quay về trang admin</Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -86,6 +120,7 @@ function EditLessonPageContent() {
         initialData={lesson}
         onSubmit={handleSubmit}
         isEditing
+        categories={categories}
       />
     </div>
   )

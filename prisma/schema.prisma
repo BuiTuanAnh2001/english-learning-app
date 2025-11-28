@@ -1,0 +1,274 @@
+// Prisma schema for English Learning App
+// This is your database schema definition
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Hashed password
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  progress  UserProgress[]
+  quizResults QuizResult[]
+
+  @@index([email])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// Category model
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  lessons Lesson[]
+
+  @@index([name])
+}
+
+// Lesson model
+model Lesson {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  level       Level
+  duration    String
+  thumbnailUrl String?
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  vocabulary  Vocabulary[]
+  phrases     Phrase[]
+  dialogues   Dialogue[]
+  objectives  Objective[]
+  tips        Tip[]
+  progress    UserProgress[]
+  quizzes     Quiz[]
+
+  @@index([categoryId])
+  @@index([level])
+}
+
+enum Level {
+  beginner
+  intermediate
+  advanced
+}
+
+// Vocabulary model
+model Vocabulary {
+  id            String   @id @default(cuid())
+  word          String
+  pronunciation String
+  meaning       String
+  example       String
+  imageUrl      String?
+  tags          String[] // Array of tags
+  lessonId      String
+  order         Int      @default(0) // Order in lesson
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([word])
+}
+
+// Phrase model
+model Phrase {
+  id        String   @id @default(cuid())
+  phrase    String
+  meaning   String
+  example   String
+  context   String?
+  imageUrl  String?
+  lessonId  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+// Dialogue model
+model Dialogue {
+  id          String   @id @default(cuid())
+  speaker     String
+  text        String
+  translation String?
+  emotion     String?
+  gender      Gender?
+  lessonId    String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+enum Gender {
+  male
+  female
+}
+
+// Objective model
+model Objective {
+  id        String   @id @default(cuid())
+  text      String
+  lessonId  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+// Tip model
+model Tip {
+  id        String   @id @default(cuid())
+  text      String
+  lessonId  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+// User progress tracking
+model UserProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  lessonId   String
+  completed  Boolean  @default(false)
+  progress   Int      @default(0) // 0-100
+  lastAccess DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+}
+
+// Quiz model
+model Quiz {
+  id        String         @id @default(cuid())
+  lessonId  String
+  title     String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  // Relations
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  results   QuizResult[]
+
+  @@index([lessonId])
+}
+
+// Quiz question model
+model QuizQuestion {
+  id            String       @id @default(cuid())
+  quizId        String
+  type          QuestionType
+  question      String
+  options       String[] // For multiple choice
+  correctAnswer String // JSON string for array answers
+  explanation   String?
+  points        Int          @default(1)
+  order         Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@index([quizId])
+}
+
+enum QuestionType {
+  multiple_choice
+  fill_blank
+  match
+  true_false
+}
+
+// Quiz result model
+model QuizResult {
+  id              String   @id @default(cuid())
+  userId          String
+  quizId          String
+  score           Int
+  totalQuestions  Int
+  correctAnswers  Int
+  timeSpent       Int // in seconds
+  completedAt     DateTime @default(now())
+
+  // Relations
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@index([userId])
+  @@index([quizId])
+}
+
+// Individual quiz answer
+model QuizAnswer {
+  id         String   @id @default(cuid())
+  resultId   String
+  questionId String
+  userAnswer String // JSON string for array answers
+  isCorrect  Boolean
+  timeSpent  Int // in seconds
+  createdAt  DateTime @default(now())
+
+  // Relations
+  result   QuizResult   @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([resultId])
+  @@index([questionId])
+}

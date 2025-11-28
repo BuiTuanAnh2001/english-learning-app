@@ -16,6 +16,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -32,19 +33,22 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     setError('')
     setIsLoading(true)
 
-    // Simulate a small delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    const success = login(password)
-    
-    if (success) {
-      setPassword('')
-      onSuccess?.()
-      setTimeout(() => {
-        onClose()
-      }, 300)
-    } else {
-      setError('Mật khẩu không chính xác!')
+    try {
+      const success = await login(email, password)
+      
+      if (success) {
+        setEmail('')
+        setPassword('')
+        onSuccess?.()
+        setTimeout(() => {
+          onClose()
+        }, 300)
+      } else {
+        setError('Email hoặc mật khẩu không chính xác!')
+      }
+    } catch (err) {
+      setError('Đăng nhập thất bại. Vui lòng thử lại.')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -87,16 +91,27 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      setError('')
+                    }}
+                    disabled={isLoading}
+                    className="text-center"
+                    autoFocus
+                  />
+                  <Input
                     type="password"
-                    placeholder="Nhập mật khẩu..."
+                    placeholder="Mật khẩu"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value)
                       setError('')
                     }}
                     disabled={isLoading}
-                    className="text-center text-lg tracking-widest"
-                    autoFocus
+                    className="text-center tracking-widest"
                   />
                   
                   <AnimatePresence>
@@ -112,6 +127,10 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                       </motion.div>
                     )}
                   </AnimatePresence>
+                  
+                  {/* <p className="text-xs text-muted-foreground text-center pt-2">
+                    Mặc định: admin@vocaplanet.com / admin123
+                  </p> */}
                 </div>
 
                 <div className="flex gap-2">
@@ -126,7 +145,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isLoading || !password}
+                    disabled={isLoading || !email || !password}
                     className="flex-1 gap-2"
                   >
                     {isLoading ? (

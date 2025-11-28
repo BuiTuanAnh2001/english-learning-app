@@ -13,9 +13,11 @@ import { getLevelColor, getLevelLabel } from "@/lib/utils"
 interface LessonCardProps {
   lesson: Lesson
   index?: number
+  completed?: boolean
+  score?: number
 }
 
-export function LessonCard({ lesson, index = 0 }: LessonCardProps) {
+export function LessonCard({ lesson, index = 0, completed = false, score }: LessonCardProps) {
   // Generate illustration URL based on lesson content
   const getIllustrationUrl = () => {
     const keywords = lesson.title.toLowerCase();
@@ -48,7 +50,8 @@ export function LessonCard({ lesson, index = 0 }: LessonCardProps) {
     }
   };
 
-  const getCategoryEmoji = (category: string) => {
+  const getCategoryEmoji = (category: string | any) => {
+    const categoryName = typeof category === 'string' ? category : category?.name || '';
     const emojiMap: Record<string, string> = {
       'Giao tiếp cơ bản': '💬',
       'Hàng ngày': '🌅',
@@ -59,9 +62,14 @@ export function LessonCard({ lesson, index = 0 }: LessonCardProps) {
       'Gia đình': '👨‍👩‍👧‍👦',
       'Mua sắm': '🛍️',
       'Ẩm thực': '🍽️',
+      'daily': '🌅',
+      'business': '💼',
+      'travel': '✈️',
+      'beginner': '📚',
+      'grammar': '📖',
       'default': '📚'
     };
-    return emojiMap[category] || emojiMap['default'];
+    return emojiMap[categoryName] || emojiMap['default'];
   };
 
   return (
@@ -92,15 +100,22 @@ export function LessonCard({ lesson, index = 0 }: LessonCardProps) {
               </Badge>
             </div>
 
-            {/* Progress Badge */}
-            {lesson.progress > 0 && (
-              <div className="absolute top-4 right-4">
-                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">
-                    {lesson.progress}%
+            {/* Completion and Score Badges */}
+            {completed && (
+              <div className="absolute top-4 right-4 flex gap-2">
+                <div className="bg-emerald-500/90 backdrop-blur-md px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                  <span className="text-xs font-bold text-white">
+                    Hoàn thành
                   </span>
                 </div>
+                {score !== undefined && (
+                  <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg shadow-md">
+                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                      {score}%
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -130,22 +145,22 @@ export function LessonCard({ lesson, index = 0 }: LessonCardProps) {
                 <span className="font-medium">{lesson.duration}&apos;</span>
               </div>
               <Badge variant="outline" className="rounded-lg text-xs font-medium border-slate-200 dark:border-slate-700">
-                {getCategoryEmoji(lesson.category)} {lesson.category}
+                {getCategoryEmoji(lesson.category)} {typeof lesson.category === 'string' ? lesson.category : (lesson.category as any)?.name || lesson.category}
               </Badge>
             </div>
 
             {/* Progress Bar */}
-            {lesson.progress > 0 && (
+            {completed && score !== undefined && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600 dark:text-slate-400 font-medium">Tiến độ</span>
-                  <span className="font-bold text-primary">{lesson.progress}%</span>
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">Điểm số</span>
+                  <span className="font-bold text-primary">{score}%</span>
                 </div>
                 <div className="relative h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <motion.div 
                     className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full"
                     initial={{ width: 0 }}
-                    animate={{ width: `${lesson.progress}%` }}
+                    animate={{ width: `${score}%` }}
                     transition={{ duration: 0.8, delay: 0.2 }}
                   />
                 </div>

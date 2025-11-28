@@ -38,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic lesson pages
   const lessonPages = lessons.map((lesson) => ({
     url: `${baseUrl}/lessons/${lesson.id}`,
-    lastModified: new Date(lesson.updatedAt || lesson.createdAt),
+    lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))

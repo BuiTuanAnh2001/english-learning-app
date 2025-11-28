@@ -14,6 +14,7 @@ import { getLessonById, getLessons, updateLessonProgress } from '@/lib/services/
 import { generateQuizFromLesson, calculateQuizScore } from '@/lib/utils/quiz'
 import { QuizQuestion, Lesson } from '@/lib/types'
 import { useAuth } from '@/lib/contexts/auth-context'
+import { useLessons } from '@/lib/contexts/lessons-context'
 
 type QuizState = 'intro' | 'quiz' | 'result'
 
@@ -22,6 +23,7 @@ export default function QuizPage() {
   const router = useRouter()
   const lessonId = params.id as string
   const { isAuthenticated } = useAuth()
+  const { updateLocalProgress } = useLessons()
   
   const [lesson, setLesson] = useState<Lesson | null>(null)
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
@@ -105,6 +107,14 @@ export default function QuizPage() {
       try {
         const quizResult = calculateQuizScore(questions, answers)
         const percentage = Math.round((quizResult.correctAnswers / questions.length) * 100)
+        
+        // Optimistic update
+        updateLocalProgress(lessonId, {
+          completed: true,
+          progress: percentage
+        })
+        
+        // Save to server
         await updateLessonProgress(lessonId, true, percentage)
       } catch (err) {
         console.error('Error saving quiz score:', err)

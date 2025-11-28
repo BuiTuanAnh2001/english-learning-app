@@ -15,9 +15,10 @@ interface LessonCardProps {
   index?: number
   completed?: boolean
   score?: number
+  showProgress?: boolean
 }
 
-export function LessonCard({ lesson, index = 0, completed = false, score }: LessonCardProps) {
+export function LessonCard({ lesson, index = 0, completed = false, score, showProgress = true }: LessonCardProps) {
   // Generate illustration URL based on lesson content
   const getIllustrationUrl = () => {
     const keywords = lesson.title.toLowerCase();
@@ -101,7 +102,7 @@ export function LessonCard({ lesson, index = 0, completed = false, score }: Less
             </div>
 
             {/* Completion and Score Badges */}
-            {completed && (
+            {showProgress && completed && (
               <div className="absolute top-4 right-4 flex gap-2">
                 <div className="bg-emerald-500/90 backdrop-blur-md px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md">
                   <CheckCircle2 className="w-3.5 h-3.5 text-white" />
@@ -109,7 +110,7 @@ export function LessonCard({ lesson, index = 0, completed = false, score }: Less
                     Hoàn thành
                   </span>
                 </div>
-                {score !== undefined && (
+                {score !== undefined && score > 0 && (
                   <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg shadow-md">
                     <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
                       {score}%
@@ -150,7 +151,7 @@ export function LessonCard({ lesson, index = 0, completed = false, score }: Less
             </div>
 
             {/* Progress Bar */}
-            {completed && score !== undefined && (
+            {showProgress && completed && score !== undefined && score > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-600 dark:text-slate-400 font-medium">Điểm số</span>

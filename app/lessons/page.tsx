@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { LessonCard } from "@/components/lessons/lesson-card"
-import { getLessons, getUserProgress } from "@/lib/services/api"
-import { Lesson } from "@/lib/types"
+import { useLessons } from "@/lib/contexts/lessons-context"
 import { useAuth } from "@/lib/contexts/auth-context"
 
 const categories = [
@@ -17,47 +16,15 @@ const categories = [
 
 export default function LessonsPage() {
   const { isAuthenticated } = useAuth()
+  const { 
+    lessons, 
+    userProgress, 
+    loading, 
+    progressLoading, 
+    error 
+  } = useLessons()
+  
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [lessons, setLessons] = useState<Lesson[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [userProgress, setUserProgress] = useState<Map<string, { completed: boolean; progress?: number }>>(new Map())
-
-  useEffect(() => {
-    const fetchLessons = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const allLessons = await getLessons()
-        setLessons(allLessons)
-
-        // Fetch user progress if authenticated
-        if (isAuthenticated) {
-          try {
-            const progressData = await getUserProgress()
-            const progressMap = new Map()
-            progressData.forEach(p => {
-              progressMap.set(p.lessonId, { 
-                completed: p.completed, 
-                progress: p.progress ?? undefined 
-              })
-            })
-            setUserProgress(progressMap)
-          } catch (err) {
-            console.error('Error fetching progress:', err)
-            // Continue without progress data if fetch fails
-          }
-        }
-      } catch (err) {
-        setError('Không thể tải bài học. Vui lòng thử lại sau.')
-        console.error('Error fetching lessons:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchLessons()
-  }, [isAuthenticated])
 
   const filteredLessons = selectedCategory === 'all'
     ? lessons
@@ -167,6 +134,20 @@ export default function LessonsPage() {
           ))}
         </motion.div>
 
+        {/* Progress Loading Indicator */}
+        {progressLoading && isAuthenticated && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center mb-6"
+          >
+            <div className="inline-flex items-center px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+              <span className="text-sm text-blue-600 dark:text-blue-400">Đang tải tiến độ học tập...</span>
+            </div>
+          </motion.div>
+        )}
+
         {/* Lessons Grid */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -181,8 +162,9 @@ export default function LessonsPage() {
                 key={lesson.id} 
                 lesson={lesson} 
                 index={index}
-                completed={progress?.completed}
+                completed={progress?.completed || false}
                 score={progress?.progress}
+                showProgress={isAuthenticated}
               />
             )
           })}

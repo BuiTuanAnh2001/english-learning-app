@@ -103,8 +103,8 @@ export default function QuizPage() {
     // Save quiz score to database if authenticated
     if (isAuthenticated) {
       try {
-        const score = calculateQuizScore(questions, answers)
-        const percentage = Math.round((score.correct / score.total) * 100)
+        const quizResult = calculateQuizScore(questions, answers)
+        const percentage = Math.round((quizResult.correctAnswers / questions.length) * 100)
         await updateLessonProgress(lessonId, true, percentage)
       } catch (err) {
         console.error('Error saving quiz score:', err)

@@ -63,10 +63,14 @@ export async function GET(request: NextRequest) {
       data: lessons,
       count: lessons.length
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching lessons:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch lessons' },
+      { 
+        success: false, 
+        error: 'Failed to fetch lessons',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     )
   }

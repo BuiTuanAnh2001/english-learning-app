@@ -11,9 +11,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VocabularyCard } from "@/components/lessons/vocabulary-card"
 import { DialogueView } from "@/components/lessons/dialogue-view"
-import { getLessons, getLessonById, initializeStorage } from "@/lib/services/storage"
+import { getLessons, getLessonById, updateLessonProgress, getUserProgress } from "@/lib/services/api"
 import { getLevelColor, getLevelLabel } from "@/lib/utils"
 import { Lesson } from "@/lib/types"
+import { useAuth } from "@/lib/contexts/auth-context"
 
 export default function LessonDetailPage() {
   const params = useParams()
@@ -21,22 +22,45 @@ export default function LessonDetailPage() {
   const [lesson, setLesson] = useState<Lesson | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isCompleted, setIsCompleted] = useState(false)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
-    initializeStorage()
-    const foundLesson = getLessonById(lessonId)
-    const allLessons = getLessons()
-    setLesson(foundLesson)
-    setLessons(allLessons)
-    setLoading(false)
-    
-    // Check if lesson is marked as completed
-    const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '[]')
-    setIsCompleted(completedLessons.includes(lessonId))
-  }, [lessonId])
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const [foundLesson, allLessons] = await Promise.all([
+          getLessonById(lessonId),
+          getLessons()
+        ])
+        setLesson(foundLesson)
+        setLessons(allLessons)
+        
+        // Check completion status from database if authenticated
+        if (isAuthenticated) {
+          try {
+            const progressData = await getUserProgress()
+            const lessonProgress = progressData.find(p => p.lessonId === lessonId)
+            setIsCompleted(lessonProgress?.completed || false)
+          } catch (err) {
+            console.error('Error fetching progress:', err)
+            // Continue without progress data if fetch fails
+          }
+        }
+      } catch (err) {
+        setError('Không thể tải bài học. Vui lòng thử lại sau.')
+        console.error('Error fetching lesson:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [lessonId, isAuthenticated])
 
   // Show/hide scroll to bottom button
   useEffect(() => {
@@ -60,37 +84,58 @@ export default function LessonDetailPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const toggleCompletion = () => {
-    const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '[]')
-    
-    if (isCompleted) {
-      // Remove from completed
-      const updated = completedLessons.filter((id: string) => id !== lessonId)
-      localStorage.setItem('completedLessons', JSON.stringify(updated))
-      setIsCompleted(false)
-    } else {
-      // Add to completed
-      completedLessons.push(lessonId)
-      localStorage.setItem('completedLessons', JSON.stringify(completedLessons))
-      setIsCompleted(true)
+  const toggleCompletion = async () => {
+    // Require authentication to track progress
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để lưu tiến độ học tập')
+      return
+    }
+
+    try {
+      const newCompletionState = !isCompleted
+      
+      // Update database
+      await updateLessonProgress(lessonId, newCompletionState, undefined)
+      
+      // Update local state
+      setIsCompleted(newCompletionState)
+    } catch (err) {
+      console.error('Error updating progress:', err)
+      alert('Không thể cập nhật tiến độ. Vui lòng thử lại.')
     }
   }
 
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <p>Đang tải...</p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="inline-block"
+        >
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+        </motion.div>
       </div>
     )
   }
 
-  if (!lesson) {
+  if (error || !lesson) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <h1 className="text-2xl font-bold">Không tìm thấy bài học</h1>
-        <Link href="/lessons">
-          <Button className="mt-4">Quay lại danh sách bài học</Button>
-        </Link>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white dark:bg-slate-800 rounded-2xl p-12 shadow-lg max-w-md mx-auto"
+        >
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold mb-4">
+            {error || 'Không tìm thấy bài học'}
+          </h1>
+          <Link href="/lessons">
+            <Button className="mt-4">Quay lại danh sách bài học</Button>
+          </Link>
+        </motion.div>
       </div>
     )
   }

@@ -10,81 +10,45 @@ import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { 
   getLessons, 
-  deleteLesson, 
-  initializeStorage, 
-  updateCategoryLessonCount,
-  downloadLessonsAsFile,
-  downloadLessonsTemplate,
-  importLessonsFromJSON,
-} from '@/lib/services/storage'
+  deleteLesson
+} from '@/lib/services/api'
 import { Lesson } from '@/lib/types'
 
 function AdminPageContent() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    initializeStorage()
     loadLessons()
   }, [])
 
-  const loadLessons = () => {
-    const allLessons = getLessons()
-    setLessons(allLessons)
+  const loadLessons = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const allLessons = await getLessons()
+      setLessons(allLessons)
+    } catch (err) {
+      setError('Không thể tải dữ liệu. Vui lòng thử lại.')
+      console.error('Error loading lessons:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa bài học này?')) {
-      const lesson = lessons.find(l => l.id === id)
-      if (lesson && deleteLesson(id)) {
-        updateCategoryLessonCount(lesson.category)
-        loadLessons()
-      }
-    }
-  }
-
-  const handleExport = () => {
-    downloadLessonsAsFile(`lessons-${Date.now()}.json`)
-    alert('Đã tải xuống file bài học!')
-  }
-
-  const handleDownloadTemplate = () => {
-    downloadLessonsTemplate()
-    alert('Đã tải xuống file mẫu!')
-  }
-
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
       try {
-        const content = e.target?.result as string
-        const result = importLessonsFromJSON(content)
-        
-        if (result.success) {
-          alert(result.message)
-          loadLessons()
-        } else {
-          alert(`Lỗi: ${result.message}`)
-        }
-      } catch (error) {
-        alert('Lỗi khi đọc file. Vui lòng kiểm tra định dạng JSON.')
+        await deleteLesson(id)
+        await loadLessons()
+      } catch (err) {
+        alert('Lỗi khi xóa bài học. Vui lòng thử lại.')
+        console.error('Error deleting lesson:', err)
       }
     }
-    reader.readAsText(file)
-    
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click()
   }
 
   const filteredLessons = lessons.filter(lesson => {
@@ -104,15 +68,6 @@ function AdminPageContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleImport}
-        className="hidden"
-      />
-
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -121,18 +76,6 @@ function AdminPageContent() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
-            <FileJson className="w-4 h-4" />
-            Tải mẫu
-          </Button>
-          <Button variant="outline" onClick={handleExport} className="gap-2">
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
-          <Button variant="outline" onClick={triggerFileInput} className="gap-2">
-            <Upload className="w-4 h-4" />
-            Import
-          </Button>
           <Link href="/admin/lessons/new">
             <Button size="default" className="gap-2">
               <Plus className="w-5 h-5" />
@@ -142,7 +85,22 @@ function AdminPageContent() {
         </div>
       </div>
 
-      {/* Stats */}
+      {loading ? (
+        <div className="text-center py-20">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
+        </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <p className="text-lg mb-4">{error}</p>
+            <Button onClick={loadLessons}>Thử lại</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -265,6 +223,8 @@ function AdminPageContent() {
           ))
         )}
       </div>
+        </>
+      )}
     </div>
   )
 }

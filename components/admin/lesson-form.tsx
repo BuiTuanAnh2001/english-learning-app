@@ -15,14 +15,15 @@ interface LessonFormProps {
   initialData?: Lesson
   onSubmit: (data: Omit<Lesson, 'id'>) => void
   isEditing?: boolean
+  categories?: any[]
 }
 
-export function LessonForm({ initialData, onSubmit, isEditing = false }: LessonFormProps) {
+export function LessonForm({ initialData, onSubmit, isEditing = false, categories = [] }: LessonFormProps) {
   const router = useRouter()
   
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    category: initialData?.category || 'daily',
+    category: (typeof initialData?.category === 'string' ? initialData?.category : (initialData?.category as any)?.name) || (categories[0]?.name || ''),
     level: initialData?.level || 'beginner' as 'beginner' | 'intermediate' | 'advanced',
     description: initialData?.description || '',
     duration: initialData?.duration || '',
@@ -82,7 +83,7 @@ export function LessonForm({ initialData, onSubmit, isEditing = false }: LessonF
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.title || !formData.description || !formData.duration) {
+    if (!formData.title || !formData.description || !formData.duration || !formData.category) {
       alert('Vui lòng điền đầy đủ thông tin bài học')
       return
     }
@@ -123,10 +124,15 @@ export function LessonForm({ initialData, onSubmit, isEditing = false }: LessonF
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
               >
-                <option value="daily">Giao tiếp hàng ngày</option>
-                <option value="business">Tiếng Anh thương mại</option>
-                <option value="travel">Tiếng Anh du lịch</option>
-                <option value="beginner">Dành cho người mới</option>
+                {categories.length > 0 ? (
+                  categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Đang tải...</option>
+                )}
               </Select>
             </div>
 

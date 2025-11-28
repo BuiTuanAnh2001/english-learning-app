@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Menu, X, Sun, Moon, Shield, LogOut } from "lucide-react"
+import { Menu, X, Sun, Moon, Shield, LogOut, User } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -22,7 +22,7 @@ export function Navbar() {
   const [mounted, setMounted] = React.useState(false)
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const { theme, setTheme } = useTheme()
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, isAdmin, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -93,6 +93,20 @@ export function Navbar() {
 
           {/* Dark Mode Toggle & Admin/Logout & Mobile Menu Button */}
           <div className="flex items-center gap-2">
+            {/* Single Login button for non-authenticated users */}
+            {mounted && !isAuthenticated && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/auth')}
+                className="hidden md:flex gap-2 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/20"
+              >
+                <User className="h-4 w-4" />
+                Đăng nhập
+              </Button>
+            )}
+
+            {/* Logout button for authenticated users */}
             {mounted && isAuthenticated && (
               <Button
                 variant="ghost"
@@ -104,15 +118,18 @@ export function Navbar() {
                 Đăng xuất
               </Button>
             )}
-            
-            {mounted && (
+
+            {/* Admin button - only show for authenticated users, highlighted for admin */}
+            {mounted && isAuthenticated && pathname !== '/admin' && isAdmin && (
               <Button
-                variant={isAuthenticated ? "default" : "outline"}
+                variant={isAdmin ? "default" : "ghost"}
                 size="sm"
-                onClick={handleAdminClick}
+                onClick={isAdmin ? () => router.push('/admin') : undefined}
+                disabled={!isAdmin}
                 className={cn(
                   "hidden md:flex gap-2 rounded-xl",
-                  isAuthenticated && "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/30"
+                  isAdmin && "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/30 text-white",
+                  !isAdmin && "opacity-50 cursor-not-allowed"
                 )}
               >
                 <Shield className="h-4 w-4" />
@@ -170,18 +187,20 @@ export function Navbar() {
               </Link>
             ))}
             
-            {mounted && (
+            {/* Mobile menu - Single Login button for non-authenticated users */}
+            {mounted && !isAuthenticated && (
               <button
                 onClick={() => {
-                  handleAdminClick()
+                  router.push('/auth')
                   setIsOpen(false)
                 }}
-                className="flex items-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                className="flex items-center gap-2 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700"
               >
-                <Shield className="h-4 w-4" /> Admin
+                <User className="h-4 w-4" /> Đăng nhập
               </button>
             )}
 
+            {/* Mobile menu - Logout button for authenticated users */}
             {mounted && isAuthenticated && (
               <button
                 onClick={() => {
@@ -191,6 +210,26 @@ export function Navbar() {
                 className="flex items-center gap-2 py-2 text-sm font-medium text-destructive hover:text-destructive/80"
               >
                 <LogOut className="h-4 w-4" /> Đăng xuất
+              </button>
+            )}
+
+            {/* Mobile menu - Admin button (only for authenticated users, highlighted for admin) */}
+            {mounted && isAuthenticated && pathname !== '/admin' && (
+              <button
+                onClick={() => {
+                  if (isAdmin) {
+                    router.push('/admin')
+                    setIsOpen(false)
+                  }
+                }}
+                disabled={!isAdmin}
+                className={cn(
+                  "flex items-center gap-2 py-2 text-sm font-medium",
+                  isAdmin && "text-blue-600 dark:text-blue-400 hover:text-blue-700 font-bold",
+                  !isAdmin && "text-muted-foreground/50 cursor-not-allowed"
+                )}
+              >
+                <Shield className="h-4 w-4" /> Admin {isAdmin && "✨"}
               </button>
             )}
 

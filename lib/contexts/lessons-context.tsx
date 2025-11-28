@@ -17,7 +17,7 @@ interface LessonsContextType {
   progressLoading: boolean
   error: string | null
   refreshLessons: () => Promise<void>
-  refreshProgress: () => Promise<void>
+  refreshProgress: (forceRefresh?: boolean) => Promise<void>
   updateLocalProgress: (lessonId: string, data: ProgressData) => void
 }
 
@@ -63,7 +63,7 @@ export function LessonsProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const refreshProgress = useCallback(async () => {
+  const refreshProgress = useCallback(async (forceRefresh = false) => {
     if (!isAuthenticated || !user) {
       setUserProgress(new Map())
       progressCache = null
@@ -72,8 +72,8 @@ export function LessonsProvider({ children }: { children: ReactNode }) {
 
     const now = Date.now()
     
-    // Sử dụng cache nếu còn hiệu lực và cùng user
-    if (progressCache && now - lastProgressFetch < CACHE_DURATION) {
+    // Sử dụng cache nếu còn hiệu lực và không force refresh
+    if (!forceRefresh && progressCache && now - lastProgressFetch < CACHE_DURATION) {
       setUserProgress(progressCache)
       return
     }

@@ -1,59 +1,132 @@
 'use client'
 
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { BookOpen, Clock, Award, TrendingUp } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { BookOpen, Clock, Award, TrendingUp, LogIn, RefreshCw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { lessons, categories } from "@/lib/data/lessons"
+import { Button } from "@/components/ui/button"
+import { useLessons } from "@/lib/contexts/lessons-context"
+import { useAuth } from "@/lib/contexts/auth-context"
 import { getLevelColor, getLevelLabel } from "@/lib/utils"
+import { getCategories } from "@/lib/services/api"
+
+interface Category {
+  id: string
+  name: string
+  icon: string
+}
 
 export default function ProgressPage() {
-  // Get completed lessons from localStorage
-  const completedLessonIds = typeof window !== 'undefined' 
-    ? JSON.parse(localStorage.getItem('completedLessons') || '[]')
-    : []
+  const router = useRouter()
+  const { isAuthenticated, user } = useAuth()
+  const { lessons, userProgress, loading, progressLoading, refreshProgress } = useLessons()
+  const [categories, setCategories] = useState<Category[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await getCategories()
+        setCategories(data)
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      } finally {
+        setCategoriesLoading(false)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // Redirect nếu chưa đăng nhập
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-20"
+        >
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 shadow-lg max-w-md mx-auto">
+            <LogIn className="w-16 h-16 text-primary mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-4">Đăng nhập để xem tiến độ</h2>
+            <p className="text-muted-foreground mb-6">
+              Bạn cần đăng nhập để theo dõi tiến độ học tập của mình
+            </p>
+            <Button onClick={() => router.push('/auth')} size="lg">
+              Đăng nhập ngay
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
   
-  // Calculate statistics
+  // Tính toán thống kê từ userProgress
+  const completedLessonIds = Array.from(userProgress.entries())
+    .filter(([_, data]) => data.completed)
+    .map(([id]) => id)
+  
   const completedLessons = completedLessonIds.length
   const totalLessons = lessons.length
+  
+  // Tính tổng thời gian học
   const totalMinutes = lessons.reduce((acc, lesson) => {
-    const minutes = parseInt(lesson.duration)
+    const minutes = parseInt(lesson.duration) || 0
     return acc + (completedLessonIds.includes(lesson.id) ? minutes : 0)
   }, 0)
-  const streak = 7 // Mock streak
+  
+  // Tính điểm trung bình
+  const scoresArray = Array.from(userProgress.values())
+    .filter(p => p.completed && p.progress !== undefined && p.progress > 0)
+    .map(p => p.progress as number)
+  
+  const averageScore = scoresArray.length > 0 
+    ? Math.round(scoresArray.reduce((a, b) => a + b, 0) / scoresArray.length) 
+    : 0
+  
+  // Mock streak (có thể implement sau với database)
+  const streak = completedLessons > 0 ? Math.min(completedLessons, 7) : 0
 
   const stats = [
     {
       title: "Bài học hoàn thành",
       value: `${completedLessons}/${totalLessons}`,
       icon: BookOpen,
-      color: "from-primary to-primary/60",
+      color: "from-blue-500 to-blue-600",
     },
     {
       title: "Thời gian học",
       value: `${totalMinutes} phút`,
       icon: Clock,
-      color: "from-secondary to-secondary/60",
+      color: "from-emerald-500 to-emerald-600",
     },
     {
       title: "Chuỗi ngày học",
       value: `${streak} ngày`,
       icon: Award,
-      color: "from-accent to-accent/60",
+      color: "from-amber-500 to-amber-600",
     },
     {
       title: "Điểm trung bình",
-      value: "8.5/10",
+      value: averageScore > 0 ? `${averageScore}%` : "Chưa có",
       icon: TrendingUp,
-      color: "from-primary to-secondary",
+      color: "from-purple-500 to-purple-600",
     },
   ]
 
-  // Calculate progress by category
+  // Tính tiến độ theo category
   const categoryProgress = categories.map((category) => {
-    const categoryLessons = lessons.filter((l) => l.category === category.id)
+    const categoryLessons = lessons.filter((l) => {
+      const lessonCategory = typeof l.category === 'string' 
+        ? l.category 
+        : (l.category as any)?.name || l.category
+      return lessonCategory === category.name || (l.category as any)?.id === category.id
+    })
     const completed = categoryLessons.filter((l) => completedLessonIds.includes(l.id)).length
     const total = categoryLessons.length
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
@@ -66,10 +139,26 @@ export default function ProgressPage() {
     }
   })
 
-  // Recent completed lessons (last 5)
+  // Bài học gần đây với điểm số
   const recentLessons = lessons
     .filter(l => completedLessonIds.includes(l.id))
+    .map(l => ({
+      ...l,
+      score: userProgress.get(l.id)?.progress || 0
+    }))
     .slice(0, 5)
+
+  // Loading state
+  if (loading || categoriesLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-muted-foreground">Đang tải tiến độ học tập...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -79,12 +168,23 @@ export default function ProgressPage() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12 space-y-4"
       >
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
           Tiến độ học tập
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Theo dõi quá trình học tập và thành tích của bạn
+          Xin chào <span className="font-semibold text-primary">{user?.name || 'bạn'}</span>! Theo dõi quá trình học tập và thành tích của bạn
         </p>
+        {/* Refresh button */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => refreshProgress(true)}
+          disabled={progressLoading}
+          className="mt-2"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${progressLoading ? 'animate-spin' : ''}`} />
+          {progressLoading ? 'Đang cập nhật...' : 'Làm mới'}
+        </Button>
       </motion.div>
 
       {/* Stats Cards */}
@@ -162,47 +262,59 @@ export default function ProgressPage() {
       >
         <Card>
           <CardHeader>
-            <CardTitle>Bài học gần đây</CardTitle>
+            <CardTitle>Bài học đã hoàn thành</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentLessons.map((lesson, index) => (
-                <motion.div
-                  key={lesson.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                >
-                  <Link href={`/lessons/${lesson.id}`}>
-                    <div className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer">
-                      <div className="flex-1">
-                        <h3 className="font-medium mb-1">{lesson.title}</h3>
-                        <div className="flex items-center gap-2">
-                          <Badge className={getLevelColor(lesson.level)} variant="default">
-                            {getLevelLabel(lesson.level)}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {lesson.duration}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="w-32">
-                        {lesson.progress > 0 ? (
+            {recentLessons.length === 0 ? (
+              <div className="text-center py-8">
+                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">Bạn chưa hoàn thành bài học nào</p>
+                <Button onClick={() => router.push('/lessons')}>
+                  Bắt đầu học ngay
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentLessons.map((lesson, index) => (
+                  <motion.div
+                    key={lesson.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
+                  >
+                    <Link href={`/lessons/${lesson.id}`}>
+                      <div className="flex items-center justify-between p-4 rounded-lg border hover:border-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-pointer">
+                        <div className="flex-1">
+                          <h3 className="font-medium mb-1">{lesson.title}</h3>
                           <div className="flex items-center gap-2">
-                            <Progress value={lesson.progress} className="flex-1" />
-                            <span className="text-xs text-muted-foreground w-8 text-right">
-                              {lesson.progress}%
+                            <Badge className={getLevelColor(lesson.level)} variant="default">
+                              {getLevelLabel(lesson.level)}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {lesson.duration} phút
                             </span>
                           </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Chưa bắt đầu</span>
-                        )}
+                        </div>
+                        <div className="w-32">
+                          {lesson.score > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <Progress value={lesson.score} className="flex-1" />
+                              <span className={`text-sm font-bold ${lesson.score >= 80 ? 'text-emerald-600' : lesson.score >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                                {lesson.score}%
+                              </span>
+                            </div>
+                          ) : (
+                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                              ✓ Đã hoàn thành
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

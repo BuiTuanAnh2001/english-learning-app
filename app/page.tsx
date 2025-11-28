@@ -45,8 +45,34 @@ const features = [
 ]
 
 export default function Home() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Vocaplanet',
+    url: 'https://vocaplanet.online',
+    description: 'Học tiếng Anh giao tiếp online miễn phí',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://vocaplanet.online/lessons?search={search_term_string}',
+      'query-input': 'required name=search_term_string'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Vocaplanet',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://vocaplanet.online/logo.png'
+      }
+    }
+  }
+
   return (
-    <div className="flex flex-col">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-16 md:py-24 lg:py-32">
         {/* Background decoration */}
@@ -235,6 +261,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   )
 }

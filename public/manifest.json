@@ -1,0 +1,41 @@
+{
+  "name": "Vocaplanet - Học Tiếng Anh Online",
+  "short_name": "Vocaplanet",
+  "description": "Học tiếng Anh giao tiếp online miễn phí với phương pháp tương tác và luyện phát âm AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Bài học",
+      "short_name": "Lessons",
+      "description": "Xem tất cả bài học",
+      "url": "/lessons",
+      "icons": [{ "src": "/icon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Tiến độ",
+      "short_name": "Progress",
+      "description": "Xem tiến độ học tập",
+      "url": "/progress",
+      "icons": [{ "src": "/icon.svg", "sizes": "96x96" }]
+    }
+  ]
+}

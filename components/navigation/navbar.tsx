@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp } from "lucide-react"
+import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp, Sparkles, Home, GraduationCap, BarChart3 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -12,9 +12,9 @@ import { useAuth } from "@/lib/contexts/auth-context"
 import { LoginModal } from "@/components/auth/login-modal"
 
 const navItems = [
-  { name: "Trang chủ", href: "/" },
-  { name: "Bài học", href: "/lessons" },
-  { name: "Tiến độ", href: "/progress" },
+  { name: "Trang chủ", href: "/", icon: Home },
+  { name: "Bài học", href: "/lessons", icon: GraduationCap },
+  { name: "Tiến độ", href: "/progress", icon: BarChart3 },
 ]
 
 export function Navbar() {
@@ -22,6 +22,7 @@ export function Navbar() {
   const [mounted, setMounted] = React.useState(false)
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const [showUserMenu, setShowUserMenu] = React.useState(false)
+  const [scrolled, setScrolled] = React.useState(false)
   const { theme, setTheme } = useTheme()
   const { isAuthenticated, isAdmin, logout, user } = useAuth()
   const pathname = usePathname()
@@ -30,6 +31,13 @@ export function Navbar() {
 
   React.useEffect(() => {
     setMounted(true)
+    
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Close user menu when clicking outside
@@ -81,315 +89,525 @@ export function Navbar() {
   const getAvatarColor = (name?: string) => {
     if (!name) return 'bg-gradient-to-br from-blue-500 to-indigo-600'
     const colors = [
-      'bg-gradient-to-br from-blue-500 to-indigo-600',
-      'bg-gradient-to-br from-purple-500 to-pink-600',
-      'bg-gradient-to-br from-emerald-500 to-teal-600',
-      'bg-gradient-to-br from-orange-500 to-red-600',
-      'bg-gradient-to-br from-cyan-500 to-blue-600',
+      'bg-gradient-to-br from-blue-500 to-cyan-500',
+      'bg-gradient-to-br from-purple-500 to-pink-500',
+      'bg-gradient-to-br from-emerald-500 to-teal-500',
+      'bg-gradient-to-br from-orange-500 to-red-500',
+      'bg-gradient-to-br from-indigo-500 to-purple-500',
     ]
     const index = name.charCodeAt(0) % colors.length
     return colors[index]
   }
 
+  const isHomePage = pathname === '/'
+
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className="sticky top-0 z-50 w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-sm"
-    >
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 transition-all group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-blue-500/40">
-              <span className="text-2xl font-black text-white">V</span>
-              <div className="absolute -bottom-1 left-3 w-2.5 h-2.5 bg-indigo-600 transform rotate-45 rounded-sm"></div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Vocaplanet
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 -mt-0.5 font-medium">
-                Learn & Share Words
-              </span>
-            </div>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 relative",
-                  pathname === item.href
-                    ? "text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30"
-                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                )}
+    <>
+      <motion.nav
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+          scrolled || !isHomePage
+            ? "bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg shadow-slate-900/5 dark:shadow-slate-900/20 border-b border-slate-200/50 dark:border-slate-700/50"
+            : "bg-transparent"
+        )}
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 md:h-20 items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex items-center space-x-3 group">
+              <motion.div 
+                className="relative flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-cyan-500 to-indigo-600 shadow-lg shadow-blue-500/30 overflow-hidden"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
               >
-                {item.name}
-              </Link>
-            ))}
-          </div>
+                <span className="text-xl md:text-2xl font-black text-white relative z-10">V</span>
+                {/* Shine effect */}
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  animate={{ x: [-100, 100] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                />
+              </motion.div>
+              <div className="flex flex-col">
+                <span className={cn(
+                  "text-lg md:text-xl font-bold transition-colors duration-300",
+                  scrolled || !isHomePage
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
+                    : "text-white"
+                )}>
+                  Vocaplanet
+                </span>
+                <span className={cn(
+                  "text-[10px] -mt-0.5 font-medium transition-colors duration-300 hidden sm:block",
+                  scrolled || !isHomePage
+                    ? "text-slate-500 dark:text-slate-400"
+                    : "text-blue-200"
+                )}>
+                  Learn & Share Words
+                </span>
+              </div>
+            </Link>
 
-          {/* Dark Mode Toggle & User Menu & Mobile Menu Button */}
-          <div className="flex items-center gap-2">
-            {/* Login button for non-authenticated users */}
-            {mounted && !isAuthenticated && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push('/auth')}
-                className="hidden md:flex gap-2 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/20"
-              >
-                <User className="h-4 w-4" />
-                Đăng nhập
-              </Button>
-            )}
-
-            {/* User Avatar Menu for authenticated users */}
-            {mounted && isAuthenticated && (
-              <div className="hidden md:block relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                >
-                  <div className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg",
-                    getAvatarColor(user?.name)
-                  )}>
-                    {getUserInitials(user?.name)}
-                  </div>
-                  <div className="text-left hidden lg:block">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {user?.name || 'User'}
-                    </p>
-                    {isAdmin && (
-                      <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                        <Shield className="w-3 h-3" />
-                        Admin
-                      </p>
-                    )}
-                  </div>
-                  <ChevronDown className={cn(
-                    "w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform",
-                    showUserMenu && "rotate-180"
-                  )} />
-                </button>
-
-                {/* Dropdown Menu */}
-                <AnimatePresence>
-                  {showUserMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50"
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center">
+              <div className={cn(
+                "flex items-center gap-1 p-1.5 rounded-2xl transition-all duration-300",
+                scrolled || !isHomePage
+                  ? "bg-slate-100/80 dark:bg-slate-800/80"
+                  : "bg-white/10 backdrop-blur-md"
+              )}>
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
                     >
-                      {/* User Info */}
-                      <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      <motion.div
+                        className={cn(
+                          "px-4 py-2.5 text-sm font-semibold rounded-xl transition-all duration-300 flex items-center gap-2",
+                          isActive
+                            ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30"
+                            : scrolled || !isHomePage
+                              ? "text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400"
+                              : "text-white/80 hover:text-white hover:bg-white/10"
+                        )}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {item.name}
+                      </motion.div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Right side actions */}
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Theme Toggle */}
+              {mounted && (
+                <motion.button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className={cn(
+                    "hidden md:flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300",
+                    scrolled || !isHomePage
+                      ? "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      : "bg-white/10 hover:bg-white/20 backdrop-blur-md"
+                  )}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <AnimatePresence mode="wait">
+                    {theme === "dark" ? (
+                      <motion.div
+                        key="sun"
+                        initial={{ rotate: -90, scale: 0 }}
+                        animate={{ rotate: 0, scale: 1 }}
+                        exit={{ rotate: 90, scale: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Sun className="h-5 w-5 text-amber-400" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="moon"
+                        initial={{ rotate: 90, scale: 0 }}
+                        animate={{ rotate: 0, scale: 1 }}
+                        exit={{ rotate: -90, scale: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Moon className={cn(
+                          "h-5 w-5",
+                          scrolled || !isHomePage ? "text-slate-600" : "text-white"
+                        )} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              )}
+
+              {/* Login button for non-authenticated users */}
+              {mounted && !isAuthenticated && (
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    size="sm"
+                    onClick={() => router.push('/auth')}
+                    className={cn(
+                      "hidden md:flex gap-2 rounded-xl font-semibold px-5 py-2.5 transition-all duration-300",
+                      scrolled || !isHomePage
+                        ? "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/30"
+                        : "bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
+                    )}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Đăng nhập
+                  </Button>
+                </motion.div>
+              )}
+
+              {/* User Avatar Menu for authenticated users */}
+              {mounted && isAuthenticated && (
+                <div className="hidden md:block relative" ref={userMenuRef}>
+                  <motion.button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className={cn(
+                      "flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all duration-300",
+                      scrolled || !isHomePage
+                        ? "hover:bg-slate-100 dark:hover:bg-slate-800"
+                        : "hover:bg-white/10"
+                    )}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className={cn(
+                      "w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white/50",
+                      getAvatarColor(user?.name)
+                    )}>
+                      {getUserInitials(user?.name)}
+                    </div>
+                    <div className="text-left hidden lg:block">
+                      <p className={cn(
+                        "text-sm font-semibold transition-colors",
+                        scrolled || !isHomePage
+                          ? "text-slate-900 dark:text-white"
+                          : "text-white"
+                      )}>
+                        {user?.name || 'User'}
+                      </p>
+                      {isAdmin && (
+                        <p className="text-xs text-cyan-400 flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          Admin
+                        </p>
+                      )}
+                    </div>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 transition-all duration-300",
+                      showUserMenu && "rotate-180",
+                      scrolled || !isHomePage
+                        ? "text-slate-600 dark:text-slate-400"
+                        : "text-white/70"
+                    )} />
+                  </motion.button>
+
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+                      >
+                        {/* User Info Header */}
+                        <div className="p-4 bg-gradient-to-r from-blue-500 to-indigo-600">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/30",
+                              getAvatarColor(user?.name)
+                            )}>
+                              {getUserInitials(user?.name)}
+                            </div>
+                            <div>
+                              <p className="text-white font-semibold">
+                                {user?.name || 'User'}
+                              </p>
+                              <p className="text-blue-100 text-sm">
+                                {user?.email}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Menu Items */}
+                        <div className="py-2">
+                          <button
+                            onClick={() => {
+                              router.push('/lessons')
+                              setShowUserMenu(false)
+                            }}
+                            className="w-full px-4 py-3 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                              <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <span>Bài học của tôi</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              router.push('/progress')
+                              setShowUserMenu(false)
+                            }}
+                            className="w-full px-4 py-3 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <span>Tiến độ học tập</span>
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                router.push('/admin')
+                                setShowUserMenu(false)
+                              }}
+                              className="w-full px-4 py-3 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                              </div>
+                              <span className="font-medium">Quản trị viên</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Logout */}
+                        <div className="border-t border-slate-200 dark:border-slate-700 p-2">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-3 rounded-xl transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Đăng xuất</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Mobile menu button */}
+              <motion.button
+                className={cn(
+                  "md:hidden p-2.5 rounded-xl transition-all duration-300",
+                  scrolled || !isHomePage
+                    ? "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    : "bg-white/10 hover:bg-white/20 backdrop-blur-md"
+                )}
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="Toggle menu"
+                whileTap={{ scale: 0.9 }}
+              >
+                <AnimatePresence mode="wait">
+                  {isOpen ? (
+                    <motion.div
+                      key="close"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <X size={22} className={cn(
+                        scrolled || !isHomePage ? "text-slate-700 dark:text-slate-300" : "text-white"
+                      )} />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="menu"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Menu size={22} className={cn(
+                        scrolled || !isHomePage ? "text-slate-700 dark:text-slate-300" : "text-white"
+                      )} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </motion.nav>
+
+      {/* Mobile Navigation Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+              onClick={() => setIsOpen(false)}
+            />
+            
+            {/* Mobile Menu */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-white dark:bg-slate-900 z-50 md:hidden shadow-2xl"
+            >
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="p-5 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <Link href="/" className="flex items-center space-x-3" onClick={() => setIsOpen(false)}>
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                        <span className="text-xl font-black text-white">V</span>
+                      </div>
+                      <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        Vocaplanet
+                      </span>
+                    </Link>
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    >
+                      <X size={20} className="text-slate-600 dark:text-slate-400" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* User Info (mobile) */}
+                {mounted && isAuthenticated && user && (
+                  <div className="p-5 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl">
+                      <div className={cn(
+                        "w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-white/30",
+                        getAvatarColor(user?.name)
+                      )}>
+                        {getUserInitials(user?.name)}
+                      </div>
+                      <div className="text-white">
+                        <p className="font-semibold">
                           {user?.name || 'User'}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="text-sm text-blue-100">
                           {user?.email}
                         </p>
+                        {isAdmin && (
+                          <p className="text-xs text-cyan-300 flex items-center gap-1 mt-1">
+                            <Shield className="w-3 h-3" />
+                            Quản trị viên
+                          </p>
+                        )}
                       </div>
+                    </div>
+                  </div>
+                )}
 
-                      {/* Menu Items */}
-                      <div className="py-2">
-                        <button
-                          onClick={() => {
-                            router.push('/lessons')
-                            setShowUserMenu(false)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3"
+                {/* Navigation Items */}
+                <div className="flex-1 overflow-y-auto p-5">
+                  <div className="space-y-2">
+                    {navItems.map((item, index) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      return (
+                        <motion.div
+                          key={item.href}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
                         >
-                          <BookOpen className="w-4 h-4" />
-                          Bài học của tôi
-                        </button>
-                        <button
-                          onClick={() => {
-                            router.push('/progress')
-                            setShowUserMenu(false)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3"
-                        >
-                          <TrendingUp className="w-4 h-4" />
-                          Tiến độ học tập
-                        </button>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center gap-4 py-3.5 px-4 rounded-xl font-medium transition-all",
+                              isActive
+                                ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg"
+                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            )}
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <Icon className="w-5 h-5" />
+                            {item.name}
+                          </Link>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Additional Actions */}
+                  <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                    {mounted && !isAuthenticated && (
+                      <motion.button
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        onClick={() => {
+                          router.push('/auth')
+                          setIsOpen(false)
+                        }}
+                        className="flex items-center gap-4 py-3.5 px-4 rounded-xl font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 w-full shadow-lg"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Đăng nhập
+                      </motion.button>
+                    )}
+
+                    {mounted && isAuthenticated && (
+                      <>
                         {isAdmin && (
                           <button
                             onClick={() => {
                               router.push('/admin')
-                              setShowUserMenu(false)
+                              setIsOpen(false)
                             }}
-                            className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 flex items-center gap-3 font-medium"
+                            className="flex items-center gap-4 py-3.5 px-4 rounded-xl font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 w-full"
                           >
-                            <Shield className="w-4 h-4" />
+                            <Shield className="w-5 h-5" />
                             Quản trị viên
                           </button>
                         )}
-                      </div>
-
-                      {/* Logout */}
-                      <div className="border-t border-slate-200 dark:border-slate-700 pt-2">
                         <button
-                          onClick={handleLogout}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-3"
+                          onClick={() => {
+                            handleLogout()
+                            setIsOpen(false)
+                          }}
+                          className="flex items-center gap-4 py-3.5 px-4 rounded-xl font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 w-full"
                         >
-                          <LogOut className="w-4 h-4" />
+                          <LogOut className="w-5 h-5" />
                           Đăng xuất
                         </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
-            {mounted && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="hidden md:flex rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-5 w-5 text-amber-500" />
-                ) : (
-                  <Moon className="h-5 w-5 text-blue-600" />
-                )}
-              </Button>
-            )}
-
-            {/* Mobile menu button */}
-            <button
-              className="md:hidden p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle menu"
-            >
-              {isOpen ? <X size={24} className="text-slate-700 dark:text-slate-300" /> : <Menu size={24} className="text-slate-700 dark:text-slate-300" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden py-4 space-y-3 border-t border-slate-200 dark:border-slate-800"
-          >
-            {/* User Info (mobile) */}
-            {mounted && isAuthenticated && user && (
-              <div className="flex items-center gap-3 px-2 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4">
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg",
-                  getAvatarColor(user?.name)
-                )}>
-                  {getUserInitials(user?.name)}
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {user?.name || 'User'}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {user?.email}
-                  </p>
-                  {isAdmin && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 mt-1">
-                      <Shield className="w-3 h-3" />
-                      Quản trị viên
-                    </p>
+
+                {/* Footer - Theme Toggle */}
+                <div className="p-5 border-t border-slate-200 dark:border-slate-800">
+                  {mounted && (
+                    <button
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="flex items-center justify-between w-full py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {theme === "dark" ? "Chế độ sáng" : "Chế độ tối"}
+                      </span>
+                      {theme === "dark" ? (
+                        <Sun className="h-5 w-5 text-amber-400" />
+                      ) : (
+                        <Moon className="h-5 w-5 text-slate-600" />
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
-            )}
-
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "block py-2 px-2 text-sm font-medium transition-colors hover:text-primary rounded-lg",
-                  pathname === item.href
-                    ? "text-primary bg-blue-50 dark:bg-blue-950/20"
-                    : "text-muted-foreground"
-                )}
-                onClick={() => setIsOpen(false)}
-              >
-                {item.name}
-              </Link>
-            ))}
-            
-            {/* Mobile menu - Login button for non-authenticated users */}
-            {mounted && !isAuthenticated && (
-              <button
-                onClick={() => {
-                  router.push('/auth')
-                  setIsOpen(false)
-                }}
-                className="flex items-center gap-2 py-2 px-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 w-full rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/20"
-              >
-                <User className="h-4 w-4" /> Đăng nhập
-              </button>
-            )}
-
-            {/* Mobile menu - User actions for authenticated users */}
-            {mounted && isAuthenticated && (
-              <>
-                {isAdmin && (
-                  <button
-                    onClick={() => {
-                      router.push('/admin')
-                      setIsOpen(false)
-                    }}
-                    className="flex items-center gap-2 py-2 px-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 w-full rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/20"
-                  >
-                    <Shield className="h-4 w-4" /> Quản trị viên
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    handleLogout()
-                    setIsOpen(false)
-                  }}
-                  className="flex items-center gap-2 py-2 px-2 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 w-full rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20"
-                >
-                  <LogOut className="h-4 w-4" /> Đăng xuất
-                </button>
-              </>
-            )}
-
-            {mounted && (
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="flex items-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-              >
-                {theme === "dark" ? (
-                  <>
-                    <Sun className="h-4 w-4" /> Chế độ sáng
-                  </>
-                ) : (
-                  <>
-                    <Moon className="h-4 w-4" /> Chế độ tối
-                  </>
-                )}
-              </button>
-            )}
-          </motion.div>
+            </motion.div>
+          </>
         )}
-      </div>
+      </AnimatePresence>
 
       <LoginModal 
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}
         onSuccess={handleLoginSuccess}
       />
-    </motion.nav>
+    </>
   )
 }

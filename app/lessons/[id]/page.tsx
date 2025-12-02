@@ -212,7 +212,12 @@ export default function LessonDetailPage() {
           <TabsContent value="vocabulary">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               {lesson.vocabulary.map((vocab, index) => (
-                <VocabularyCard key={index} vocabulary={vocab} index={index} />
+                <VocabularyCard 
+                  key={index} 
+                  vocabulary={vocab} 
+                  index={index} 
+                  lessonTitle={lesson.title}
+                />
               ))}
             </div>
           </TabsContent>

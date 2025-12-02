@@ -53,15 +53,26 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: [
+        { level: 'asc' },
+        { createdAt: 'asc' }
+      ]
+    })
+
+    // Custom sort by level order: beginner -> intermediate -> advanced
+    const levelOrder = { beginner: 1, intermediate: 2, advanced: 3 }
+    const sortedLessons = lessons.sort((a, b) => {
+      const levelDiff = (levelOrder[a.level as keyof typeof levelOrder] || 99) - 
+                        (levelOrder[b.level as keyof typeof levelOrder] || 99)
+      if (levelDiff !== 0) return levelDiff
+      // Same level: sort by creation date (older first)
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     })
 
     return NextResponse.json({
       success: true,
-      data: lessons,
-      count: lessons.length
+      data: sortedLessons,
+      count: sortedLessons.length
     })
   } catch (error: any) {
     console.error('Error fetching lessons:', error)

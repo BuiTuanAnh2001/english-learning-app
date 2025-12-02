@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { 
@@ -52,7 +52,7 @@ export default function NotebookPage() {
   const [showAddModal, setShowAddModal] = useState(false)
 
   // Fetch notes
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     try {
       const token = localStorage.getItem('auth_token')
       const params = new URLSearchParams()
@@ -77,13 +77,13 @@ export default function NotebookPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchQuery, filterMastered, filterTag, sortBy, sortOrder])
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchNotes()
     }
-  }, [isAuthenticated, searchQuery, filterMastered, filterTag, sortBy, sortOrder])
+  }, [isAuthenticated, fetchNotes])
 
   // Toggle mastered status
   const toggleMastered = async (note: VocabularyNote) => {
@@ -394,7 +394,7 @@ export default function NotebookPage() {
 
                           {note.example && (
                             <p className="text-muted-foreground italic mb-2">
-                              "{note.example}"
+                              &ldquo;{note.example}&rdquo;
                             </p>
                           )}
 

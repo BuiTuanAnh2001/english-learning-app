@@ -78,7 +78,7 @@ function EditLessonPageContent() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-24">
         <div className="text-center py-20">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
@@ -89,7 +89,7 @@ function EditLessonPageContent() {
 
   if (error || !lesson) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-24">
         <div className="text-center py-20">
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
           <p className="text-lg mb-4">{error || 'Không tìm thấy bài học'}</p>
@@ -100,7 +100,7 @@ function EditLessonPageContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 pt-24">
       <div className="mb-6">
         <Button
           variant="ghost"

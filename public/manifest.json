@@ -15,9 +15,9 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/apple-icon.svg",
+      "src": "/apple-icon",
       "sizes": "180x180",
-      "type": "image/svg+xml"
+      "type": "image/png"
     }
   ],
   "categories": ["education", "productivity"],

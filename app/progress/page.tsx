@@ -45,7 +45,7 @@ export default function ProgressPage() {
   // Redirect nếu chưa đăng nhập
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 pt-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -151,7 +151,7 @@ export default function ProgressPage() {
   // Loading state
   if (loading || categoriesLoading) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 pt-24">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
           <p className="text-muted-foreground">Đang tải tiến độ học tập...</p>
@@ -161,7 +161,7 @@ export default function ProgressPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-12 pt-24">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

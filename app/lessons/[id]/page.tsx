@@ -107,7 +107,7 @@ export default function LessonDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
+      <div className="container mx-auto px-4 py-12 pt-24 text-center">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -122,7 +122,7 @@ export default function LessonDetailPage() {
 
   if (error || !lesson) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
+      <div className="container mx-auto px-4 py-12 pt-24 text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -145,7 +145,7 @@ export default function LessonDetailPage() {
   const nextLesson = currentIndex < lessons.length - 1 ? lessons[currentIndex + 1] : null
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-12 pt-24">
       {/* Breadcrumb */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

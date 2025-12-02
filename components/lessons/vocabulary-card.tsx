@@ -2,24 +2,29 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Volume2, Mic } from "lucide-react"
+import { Volume2, Mic, BookmarkPlus, Check } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Vocabulary } from "@/lib/types"
 import { speakEnglish } from "@/lib/utils/speech"
 import { PronunciationAssessment } from "./pronunciation-assessment"
+import { useAuth } from "@/lib/contexts/auth-context"
 import Image from "next/image"
 
 interface VocabularyCardProps {
   vocabulary: Vocabulary
   index: number
+  lessonTitle?: string
 }
 
-export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
+export function VocabularyCard({ vocabulary, index, lessonTitle }: VocabularyCardProps) {
+  const { isAuthenticated } = useAuth()
   const [isFlipped, setIsFlipped] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [showPronunciation, setShowPronunciation] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
 
   const handleSpeak = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -33,6 +38,51 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
       console.error('Error speaking word:', error)
     } finally {
       setIsSpeaking(false)
+    }
+  }
+
+  const handleSaveToNotebook = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để lưu từ vựng vào sổ tay!')
+      return
+    }
+    if (isSaving || isSaved) return
+
+    try {
+      setIsSaving(true)
+      const token = localStorage.getItem('auth_token')
+      const res = await fetch('/api/vocabulary-notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          word: vocabulary.word,
+          pronunciation: vocabulary.pronunciation,
+          meaning: vocabulary.meaning,
+          example: vocabulary.example,
+          context: lessonTitle || 'Bài học',
+          tags: vocabulary.tags || []
+        })
+      })
+      const data = await res.json()
+      
+      if (data.success) {
+        setIsSaved(true)
+      } else {
+        if (data.error?.includes('already')) {
+          setIsSaved(true) // Already saved
+        } else {
+          alert(data.error || 'Có lỗi xảy ra!')
+        }
+      }
+    } catch (error) {
+      console.error('Error saving to notebook:', error)
+      alert('Có lỗi xảy ra!')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -113,6 +163,27 @@ export function VocabularyCard({ vocabulary, index }: VocabularyCardProps) {
                 >
                   <Mic className="w-4 h-4" />
                   Luyện phát âm
+                </button>
+                <button
+                  onClick={handleSaveToNotebook}
+                  disabled={isSaving || isSaved}
+                  className={`inline-flex items-center gap-1 text-sm transition-colors ${
+                    isSaved 
+                      ? 'text-green-600' 
+                      : 'text-orange-500 hover:text-orange-600'
+                  } disabled:cursor-not-allowed`}
+                >
+                  {isSaved ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Đã lưu
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkPlus className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
+                      {isSaving ? 'Đang lưu...' : 'Lưu'}
+                    </>
+                  )}
                 </button>
               </div>
               <p className="text-xs text-muted-foreground mt-4">

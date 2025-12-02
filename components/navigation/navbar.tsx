@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp, Sparkles, Home, GraduationCap, BarChart3 } from "lucide-react"
+import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp, Sparkles, Home, GraduationCap, BarChart3, BookMarked } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -14,6 +14,7 @@ import { LoginModal } from "@/components/auth/login-modal"
 const navItems = [
   { name: "Trang chủ", href: "/", icon: Home },
   { name: "Bài học", href: "/lessons", icon: GraduationCap },
+  { name: "Sổ từ vựng", href: "/notebook", icon: BookMarked },
   { name: "Tiến độ", href: "/progress", icon: BarChart3 },
 ]
 

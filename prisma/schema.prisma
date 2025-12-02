@@ -21,8 +21,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  progress  UserProgress[]
-  quizResults QuizResult[]
+  progress        UserProgress[]
+  quizResults     QuizResult[]
+  vocabularyNotes VocabularyNote[]
 
   @@index([email])
 }
@@ -271,4 +272,31 @@ model QuizAnswer {
 
   @@index([resultId])
   @@index([questionId])
+}
+
+// Vocabulary Notebook - User's personal vocabulary notes
+model VocabularyNote {
+  id            String   @id @default(cuid())
+  userId        String
+  word          String
+  pronunciation String?
+  meaning       String
+  example       String?
+  personalNote  String?  // User's personal note/memory trick
+  context       String?  // Where they learned it (lesson name, etc.)
+  difficulty    Int      @default(3) // 1-5 scale (1=easy, 5=hard)
+  reviewCount   Int      @default(0) // How many times reviewed
+  lastReviewed  DateTime?
+  mastered      Boolean  @default(false)
+  tags          String[] // Custom tags by user
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, word]) // Each user can only save a word once
+  @@index([userId])
+  @@index([word])
+  @@index([mastered])
 }

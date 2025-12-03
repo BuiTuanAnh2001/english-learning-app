@@ -22,18 +22,6 @@ const staggerContainer = {
   },
 }
 
-// 3D Floating elements
-const floatingElements = [
-  { emoji: "📚", delay: 0, duration: 6, x: "10%", y: "20%" },
-  { emoji: "🎯", delay: 1, duration: 7, x: "85%", y: "15%" },
-  { emoji: "💡", delay: 2, duration: 5, x: "75%", y: "70%" },
-  { emoji: "🌍", delay: 0.5, duration: 8, x: "15%", y: "75%" },
-  { emoji: "✨", delay: 1.5, duration: 6, x: "90%", y: "45%" },
-  { emoji: "🎓", delay: 2.5, duration: 7, x: "5%", y: "50%" },
-  { emoji: "🗣️", delay: 3, duration: 5.5, x: "80%", y: "85%" },
-  { emoji: "📝", delay: 0.8, duration: 6.5, x: "20%", y: "35%" },
-]
-
 // Stats counter animation
 const stats = [
   { value: 500, suffix: "+", label: "Từ vựng", icon: BookOpen },
@@ -123,109 +111,18 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="flex flex-col">
-      {/* Hero Section with 3D Effects */}
+      {/* Hero Section with Simple Gradient */}
       <section className="relative min-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 py-16 md:py-24 lg:py-32">
-        {/* Animated 3D Background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Gradient orbs with 3D effect */}
-          <motion.div 
-            className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full"
-            style={{
-              background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
-              filter: "blur(60px)",
-            }}
-            animate={{
-              x: [0, 50, 0],
-              y: [0, 30, 0],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div 
-            className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full"
-            style={{
-              background: "radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%)",
-              filter: "blur(60px)",
-            }}
-            animate={{
-              x: [0, -40, 0],
-              y: [0, -40, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div 
-            className="absolute top-1/2 right-1/3 w-[300px] h-[300px] rounded-full"
-            style={{
-              background: "radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, transparent 70%)",
-              filter: "blur(50px)",
-            }}
-            animate={{
-              x: [0, 60, 0],
-              y: [0, -30, 0],
-              scale: [1, 0.9, 1],
-            }}
-            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-          />
-          
-          {/* Grid overlay for depth */}
+        {/* Simple background pattern - no animation */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
           <div 
-            className="absolute inset-0 opacity-20"
+            className="absolute inset-0"
             style={{
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), 
-                               linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`,
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
+                               linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
               backgroundSize: "50px 50px",
-              transform: "perspective(500px) rotateX(60deg)",
-              transformOrigin: "center top",
             }}
           />
-          
-          {/* Floating 3D elements */}
-          {floatingElements.map((el, index) => (
-            <motion.div
-              key={index}
-              className="absolute text-4xl md:text-5xl"
-              style={{ left: el.x, top: el.y }}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ 
-                opacity: [0.4, 0.8, 0.4],
-                scale: [1, 1.2, 1],
-                y: [0, -20, 0],
-                rotateY: [0, 180, 360],
-              }}
-              transition={{
-                duration: el.duration,
-                delay: el.delay,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              {el.emoji}
-            </motion.div>
-          ))}
-
-          {/* Particles effect */}
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={`particle-${i}`}
-              className="absolute w-1 h-1 bg-white rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                opacity: [0, 1, 0],
-                scale: [0, 1.5, 0],
-                y: [0, -100],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                delay: Math.random() * 3,
-                repeat: Infinity,
-                ease: "easeOut",
-              }}
-            />
-          ))}
         </div>
 
         <div className="container mx-auto px-4 relative z-10">

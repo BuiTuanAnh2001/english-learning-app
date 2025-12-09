@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp, Sparkles, Home, GraduationCap, BarChart3, BookMarked } from "lucide-react"
+import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp, Sparkles, Home, GraduationCap, BarChart3, BookMarked, Bell, MessageCircle, Users } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -15,6 +15,8 @@ const navItems = [
   { name: "Trang chủ", href: "/", icon: Home },
   { name: "Bài học", href: "/lessons", icon: GraduationCap },
   { name: "Sổ từ vựng", href: "/notebook", icon: BookMarked },
+  { name: "Bạn bè", href: "/friends", icon: Users },
+  { name: "Tin nhắn", href: "/messages", icon: MessageCircle },
   { name: "Tiến độ", href: "/progress", icon: BarChart3 },
 ]
 
@@ -24,6 +26,8 @@ export function Navbar() {
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const [showUserMenu, setShowUserMenu] = React.useState(false)
   const [scrolled, setScrolled] = React.useState(false)
+  const [unreadNotifications, setUnreadNotifications] = React.useState(0)
+  const [unreadMessages, setUnreadMessages] = React.useState(0)
   const { theme, setTheme } = useTheme()
   const { isAuthenticated, isAdmin, logout, user } = useAuth()
   const pathname = usePathname()
@@ -40,6 +44,43 @@ export function Navbar() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Fetch unread counts
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCounts()
+      // Poll every 10 seconds
+      const interval = setInterval(fetchUnreadCounts, 10000)
+      return () => clearInterval(interval)
+    }
+  }, [isAuthenticated])
+
+  const fetchUnreadCounts = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      
+      // Fetch unread notifications
+      const notifRes = await fetch('/api/notifications?unread=true', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const notifData = await notifRes.json()
+      if (notifData.success) {
+        setUnreadNotifications(notifData.unreadCount || 0)
+      }
+
+      // Fetch unread messages
+      const messagesRes = await fetch('/api/messages/conversations', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const messagesData = await messagesRes.json()
+      if (messagesData.success) {
+        const totalUnread = messagesData.data.reduce((sum: number, conv: any) => sum + conv.unreadCount, 0)
+        setUnreadMessages(totalUnread)
+      }
+    } catch (error) {
+      console.error('Error fetching unread counts:', error)
+    }
+  }
 
   // Close user menu when clicking outside
   React.useEffect(() => {
@@ -191,6 +232,35 @@ export function Navbar() {
 
             {/* Right side actions */}
             <div className="flex items-center gap-2 md:gap-3">
+              {/* Notifications Icon */}
+              {mounted && isAuthenticated && (
+                <motion.button
+                  onClick={() => router.push('/notifications')}
+                  className={cn(
+                    "hidden md:flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 relative",
+                    scrolled || !isHomePage
+                      ? "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      : "bg-white/10 hover:bg-white/20 backdrop-blur-md"
+                  )}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Bell className={cn(
+                    "h-5 w-5",
+                    scrolled || !isHomePage ? "text-slate-600 dark:text-slate-300" : "text-white"
+                  )} />
+                  {unreadNotifications > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                    >
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    </motion.span>
+                  )}
+                </motion.button>
+              )}
+
               {/* Theme Toggle */}
               {mounted && (
                 <motion.button

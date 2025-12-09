@@ -112,7 +112,7 @@ export default function NotificationsPage() {
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status: string) => {
           console.log('Notification realtime status:', status)
           if (status === 'SUBSCRIBED') {
             isRealtimeConnected = true

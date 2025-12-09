@@ -77,7 +77,7 @@ export function Navbar() {
               }
             }
           )
-          .subscribe((status) => {
+          .subscribe((status: string) => {
             console.log('Navbar notification channel:', status)
             if (status === 'SUBSCRIBED') {
               isRealtimeConnected = true
@@ -101,7 +101,7 @@ export function Navbar() {
               }
             }
           )
-          .subscribe((status) => {
+          .subscribe((status: string) => {
             console.log('Navbar message channel:', status)
           })
       } catch (error) {

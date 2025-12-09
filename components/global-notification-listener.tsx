@@ -92,7 +92,7 @@ export function GlobalNotificationListener() {
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status: string) => {
           console.log('Global notification channel status:', status)
         })
 
@@ -141,7 +141,7 @@ export function GlobalNotificationListener() {
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status: string) => {
           console.log('Global message channel status:', status)
         })
 

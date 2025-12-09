@@ -104,7 +104,7 @@ function MessagesContent() {
               schema: 'public',
               table: 'Message'
             },
-            (payload) => {
+            (payload: any) => {
               console.log('Realtime message event:', payload)
               // Update if message involves current chat
               if (payload.new?.senderId === selectedUser.id || 
@@ -134,7 +134,7 @@ function MessagesContent() {
               }
             }
           )
-          .subscribe((status) => {
+          .subscribe((status: string) => {
             console.log('Realtime status:', status)
             if (status === 'SUBSCRIBED') {
               isRealtimeConnected = true

@@ -281,8 +281,8 @@ function MessagesContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-20 pb-4">
-      <div className="container mx-auto px-4 max-w-7xl h-[calc(100vh-7rem)]">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-20">
+      <div className="container mx-auto px-4 max-w-7xl h-[calc(100vh-5rem)]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full py-4">
           {/* Conversations List */}
           <Card className={`md:col-span-1 flex flex-col overflow-hidden ${selectedUser ? 'hidden md:flex' : 'flex'}`}>

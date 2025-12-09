@@ -64,44 +64,83 @@ export default function NotificationsPage() {
       router.push('/auth')
     } else {
       fetchNotifications()
-      
-      // Subscribe to realtime notifications
+    }
+  }, [isAuthenticated, filter])
+  
+  // Separate effect for realtime (doesn't depend on filter)
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return
+    
+    let realtimeChannel: any = null
+    let pollInterval: NodeJS.Timeout | null = null
+    let isRealtimeConnected = false
+    
+    try {
       const supabase = createBrowserClient()
-      const channel = supabase
-        .channel('notifications-channel')
+      realtimeChannel = supabase
+        .channel('notifications-channel', {
+          config: {
+            broadcast: { self: true }
+          }
+        })
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: '*',
             schema: 'public',
-            table: 'Notification',
-            filter: `userId=eq.${user?.id}`
+            table: 'Notification'
           },
           (payload: any) => {
-            fetchNotifications(true)
-            
-            // Show browser notification
-            if (notificationPermission === 'granted') {
-              const notification = new Notification(payload.new.title, {
-                body: payload.new.message,
-                icon: '/icon.png',
-                tag: `notification-${payload.new.id}`
-              })
-              notification.onclick = () => {
-                window.focus()
-                handleNotificationClick(payload.new as Notification)
-                notification.close()
+            console.log('Realtime notification event:', payload)
+            // Check if notification is for current user
+            if (payload.new?.userId === user.id) {
+              fetchNotifications(true)
+              
+              // Show browser notification
+              if (notificationPermission === 'granted') {
+                const notification = new Notification(payload.new.title, {
+                  body: payload.new.message,
+                  icon: '/icon.png',
+                  tag: `notification-${payload.new.id}`
+                })
+                notification.onclick = () => {
+                  window.focus()
+                  handleNotificationClick(payload.new as Notification)
+                  notification.close()
+                }
               }
             }
           }
         )
-        .subscribe()
-      
-      return () => {
-        supabase.removeChannel(channel)
+        .subscribe((status) => {
+          console.log('Notification realtime status:', status)
+          if (status === 'SUBSCRIBED') {
+            isRealtimeConnected = true
+            console.log('✅ Realtime connected for notifications')
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('⚠️ Notification realtime failed, using polling')
+            isRealtimeConnected = false
+          }
+        })
+    } catch (error) {
+      console.error('Notification realtime setup error:', error)
+    }
+    
+    // Fallback polling
+    pollInterval = setInterval(() => {
+      fetchNotifications(true)
+    }, isRealtimeConnected ? 15000 : 5000) // 15s if realtime, 5s if not
+    
+    return () => {
+      if (realtimeChannel) {
+        const supabase = createBrowserClient()
+        supabase.removeChannel(realtimeChannel)
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval)
       }
     }
-  }, [isAuthenticated, filter, user?.id, notificationPermission])
+  }, [isAuthenticated, user?.id, notificationPermission])
 
   const fetchNotifications = async (isRealtime = false) => {
     try {

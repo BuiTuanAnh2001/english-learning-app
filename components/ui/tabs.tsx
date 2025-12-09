@@ -2,7 +2,9 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 interface TabsProps {
-  defaultValue: string
+  defaultValue?: string
+  value?: string
+  onValueChange?: (value: string) => void
   children: React.ReactNode
   className?: string
 }
@@ -32,11 +34,25 @@ const TabsContext = React.createContext<{
   setActiveTab: () => {},
 })
 
-const Tabs = ({ defaultValue, children, className }: TabsProps) => {
-  const [activeTab, setActiveTab] = React.useState(defaultValue)
+const Tabs = ({ defaultValue, value, onValueChange, children, className }: TabsProps) => {
+  const [activeTab, setActiveTab] = React.useState(value || defaultValue || "")
+
+  React.useEffect(() => {
+    if (value !== undefined) {
+      setActiveTab(value)
+    }
+  }, [value])
+
+  const handleTabChange = (newValue: string) => {
+    if (onValueChange) {
+      onValueChange(newValue)
+    } else {
+      setActiveTab(newValue)
+    }
+  }
 
   return (
-    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+    <TabsContext.Provider value={{ activeTab, setActiveTab: handleTabChange }}>
       <div className={cn("w-full", className)}>{children}</div>
     </TabsContext.Provider>
   )

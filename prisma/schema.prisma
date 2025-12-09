@@ -24,6 +24,13 @@ model User {
   progress        UserProgress[]
   quizResults     QuizResult[]
   vocabularyNotes VocabularyNote[]
+  
+  // Social features
+  sentFriendRequests     Friendship[] @relation("SentRequests")
+  receivedFriendRequests Friendship[] @relation("ReceivedRequests")
+  sentMessages           Message[]    @relation("SentMessages")
+  receivedMessages       Message[]    @relation("ReceivedMessages")
+  notifications          Notification[]
 
   @@index([email])
 }
@@ -299,4 +306,80 @@ model VocabularyNote {
   @@index([userId])
   @@index([word])
   @@index([mastered])
+}
+
+// Friendship model for friend connections
+model Friendship {
+  id         String           @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  // Relations
+  sender   User @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId]) // Prevent duplicate friend requests
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+// Message model for chat between friends
+model Message {
+  id         String    @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String    @db.Text
+  read       Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@index([read])
+}
+
+// Notification model for push notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      String?          @db.Text // JSON data for additional info
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  NEW_MESSAGE
+  LESSON_REMINDER
+  ACHIEVEMENT
 }

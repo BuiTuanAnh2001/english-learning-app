@@ -139,7 +139,7 @@ function MessagesContent() {
                     `${selectedUser.name || selectedUser.email}`,
                     {
                       body: payload.new.content,
-                      icon: '/icon.png',
+                      icon: '/notification-icon.svg',
                       tag: `message-${payload.new.id}`
                     }
                   )
@@ -282,11 +282,11 @@ function MessagesContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-20 pb-4">
-      <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-7rem)] py-4">
+      <div className="container mx-auto px-4 max-w-7xl h-[calc(100vh-7rem)]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full py-4">
           {/* Conversations List */}
-          <Card className={`md:col-span-1 flex flex-col ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-            <div className="p-4 border-b">
+          <Card className={`md:col-span-1 flex flex-col overflow-hidden ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+            <div className="p-4 border-b shrink-0">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <MessageCircle className="w-6 h-6 text-blue-600" />
                 Tin nhắn

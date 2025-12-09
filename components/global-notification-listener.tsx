@@ -46,7 +46,7 @@ export function GlobalNotificationListener() {
               if (Notification.permission === 'granted') {
                 const notification = new Notification(payload.new.title, {
                   body: payload.new.message,
-                  icon: '/icon.png',
+                  icon: '/notification-icon.svg',
                   tag: `notification-${payload.new.id}`,
                   requireInteraction: false
                 })
@@ -118,7 +118,7 @@ export function GlobalNotificationListener() {
                 
                 const notification = new Notification(`New message from ${senderName}`, {
                   body: payload.new.content,
-                  icon: '/icon.png',
+                  icon: '/notification-icon.svg',
                   tag: `message-${payload.new.id}`,
                   requireInteraction: false
                 })

@@ -98,7 +98,7 @@ export default function NotificationsPage() {
               if (notificationPermission === 'granted') {
                 const notification = new Notification(payload.new.title, {
                   body: payload.new.message,
-                  icon: '/icon.png',
+                  icon: '/notification-icon.svg',
                   tag: `notification-${payload.new.id}`
                 })
                 notification.onclick = () => {

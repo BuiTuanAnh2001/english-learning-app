@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { createBrowserClient } from '@/lib/supabase'
 import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp, Sparkles, Home, GraduationCap, BarChart3, BookMarked, Bell, MessageCircle, Users } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
@@ -47,13 +48,52 @@ export function Navbar() {
 
   // Fetch unread counts
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       fetchUnreadCounts()
-      // Poll every 10 seconds
-      const interval = setInterval(fetchUnreadCounts, 10000)
-      return () => clearInterval(interval)
+      
+      // Subscribe to realtime updates
+      const supabase = createBrowserClient()
+      
+      // Subscribe to notifications
+      const notifChannel = supabase
+        .channel('navbar-notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Notification',
+            filter: `userId=eq.${user.id}`
+          },
+          () => {
+            fetchUnreadCounts()
+          }
+        )
+        .subscribe()
+      
+      // Subscribe to messages
+      const messageChannel = supabase
+        .channel('navbar-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Message',
+            filter: `receiverId=eq.${user.id}`
+          },
+          () => {
+            fetchUnreadCounts()
+          }
+        )
+        .subscribe()
+      
+      return () => {
+        supabase.removeChannel(notifChannel)
+        supabase.removeChannel(messageChannel)
+      }
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, user])
 
   const fetchUnreadCounts = async () => {
     try {

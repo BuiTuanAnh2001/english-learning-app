@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/contexts/auth-context'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createBrowserClient } from '@/lib/supabase'
 import { 
   Bell, BellOff, Trash2, Check, UserPlus, UserCheck, 
   MessageCircle, Trophy, Loader2, CheckCheck
@@ -39,21 +40,70 @@ const notificationColors = {
 }
 
 export default function NotificationsPage() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission)
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          setNotificationPermission(permission)
+        })
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/auth')
     } else {
       fetchNotifications()
+      
+      // Subscribe to realtime notifications
+      const supabase = createBrowserClient()
+      const channel = supabase
+        .channel('notifications-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'Notification',
+            filter: `userId=eq.${user?.id}`
+          },
+          (payload: any) => {
+            fetchNotifications(true)
+            
+            // Show browser notification
+            if (notificationPermission === 'granted') {
+              const notification = new Notification(payload.new.title, {
+                body: payload.new.message,
+                icon: '/icon.png',
+                tag: `notification-${payload.new.id}`
+              })
+              notification.onclick = () => {
+                window.focus()
+                handleNotificationClick(payload.new as Notification)
+                notification.close()
+              }
+            }
+          }
+        )
+        .subscribe()
+      
+      return () => {
+        supabase.removeChannel(channel)
+      }
     }
-  }, [isAuthenticated, filter])
+  }, [isAuthenticated, filter, user?.id, notificationPermission])
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (isRealtime = false) => {
     try {
       const token = localStorage.getItem('auth_token')
       const url = filter === 'unread' ? '/api/notifications?unread=true' : '/api/notifications'

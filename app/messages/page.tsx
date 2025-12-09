@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { useAuth } from '@/lib/contexts/auth-context'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createBrowserClient } from '@/lib/supabase'
 import { 
   MessageCircle, Send, Loader2, ArrowLeft, Search, 
   MoreVertical, Check, CheckCheck 
@@ -47,7 +48,21 @@ function MessagesContent() {
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const previousMessagesCount = useRef(0)
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission)
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          setNotificationPermission(permission)
+        })
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -67,17 +82,71 @@ function MessagesContent() {
   useEffect(() => {
     if (selectedUser) {
       fetchMessages(selectedUser.id)
-      // Poll for new messages every 3 seconds
-      const interval = setInterval(() => {
-        fetchMessages(selectedUser.id)
-      }, 3000)
-      return () => clearInterval(interval)
+      
+      // Subscribe to realtime messages
+      const supabase = createBrowserClient()
+      const channel = supabase
+        .channel('messages-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'Message',
+            filter: `receiverId=eq.${user?.id}`
+          },
+          (payload) => {
+            // Only update if message is from the selected user
+            if (payload.new.senderId === selectedUser.id) {
+              fetchMessages(selectedUser.id)
+              
+              // Show browser notification
+              if (notificationPermission === 'granted') {
+                const notification = new Notification(`New message from ${selectedUser.name || selectedUser.email}`, {
+                  body: payload.new.content,
+                  icon: '/icon.png',
+                  tag: `message-${payload.new.id}`
+                })
+                notification.onclick = () => {
+                  window.focus()
+                  notification.close()
+                }
+              }
+            } else {
+              // Update conversation list for messages from other users
+              fetchConversations()
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'Message',
+            filter: `senderId=eq.${user?.id}`
+          },
+          (payload) => {
+            // Update read status for sent messages
+            if (payload.new.receiverId === selectedUser.id) {
+              fetchMessages(selectedUser.id)
+            }
+          }
+        )
+        .subscribe()
+      
+      return () => {
+        supabase.removeChannel(channel)
+      }
     }
-  }, [selectedUser])
+  }, [selectedUser, user?.id, notificationPermission])
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    // Only scroll on initial load or when messages length increases
+    if (messages.length > 0) {
+      scrollToBottom()
+    }
+  }, [messages.length]) // Changed from [messages] to [messages.length]
 
   const fetchConversations = async () => {
     try {

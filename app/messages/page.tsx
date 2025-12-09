@@ -84,14 +84,12 @@ function MessagesContent() {
       fetchMessages(selectedUser.id)
       
       let realtimeChannel: any = null
-      let pollInterval: NodeJS.Timeout | null = null
-      let isRealtimeConnected = false
       
-      // Try to setup Realtime
+      // Setup Realtime only - no polling
       try {
         const supabase = createBrowserClient()
         realtimeChannel = supabase
-          .channel('messages-channel', {
+          .channel(`messages-${selectedUser.id}`, {
             config: {
               broadcast: { self: true },
               presence: { key: user?.id }
@@ -105,14 +103,33 @@ function MessagesContent() {
               table: 'Message'
             },
             (payload: any) => {
-              console.log('Realtime message event:', payload)
+              console.log('🔥 Realtime message event:', payload)
               // Update if message involves current chat
               if (payload.new?.senderId === selectedUser.id || 
                   payload.new?.receiverId === selectedUser.id ||
                   payload.new?.senderId === user?.id ||
                   payload.new?.receiverId === user?.id) {
-                fetchMessages(selectedUser.id)
-                fetchConversations()
+                
+                // Instantly add new message to state without refetching
+                if (payload.event === 'INSERT' && payload.new) {
+                  setMessages(prev => {
+                    // Check if message already exists
+                    if (prev.some(m => m.id === payload.new.id)) {
+                      return prev
+                    }
+                    return [...prev, payload.new]
+                  })
+                  fetchConversations()
+                } else if (payload.event === 'UPDATE' && payload.new) {
+                  // Update message (e.g., read status)
+                  setMessages(prev => 
+                    prev.map(m => m.id === payload.new.id ? payload.new : m)
+                  )
+                } else {
+                  // Fallback: refetch if needed
+                  fetchMessages(selectedUser.id)
+                  fetchConversations()
+                }
                 
                 // Show notification for incoming messages
                 if (payload.new?.senderId === selectedUser.id && 
@@ -137,30 +154,19 @@ function MessagesContent() {
           .subscribe((status: string) => {
             console.log('Realtime status:', status)
             if (status === 'SUBSCRIBED') {
-              isRealtimeConnected = true
-              console.log('✅ Realtime connected for messages')
+              console.log('✅ Realtime connected - NO POLLING!')
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-              console.warn('⚠️ Realtime failed, using polling fallback')
-              isRealtimeConnected = false
+              console.error('❌ Realtime failed - check Supabase setup')
             }
           })
       } catch (error) {
         console.error('Realtime setup error:', error)
       }
       
-      // Fallback polling (always run, but less frequent if realtime works)
-      pollInterval = setInterval(() => {
-        const interval = isRealtimeConnected ? 10000 : 3000 // 10s if realtime, 3s if not
-        fetchMessages(selectedUser.id)
-      }, 3000)
-      
       return () => {
         if (realtimeChannel) {
           const supabase = createBrowserClient()
           supabase.removeChannel(realtimeChannel)
-        }
-        if (pollInterval) {
-          clearInterval(pollInterval)
         }
       }
     }
@@ -347,11 +353,11 @@ function MessagesContent() {
           </Card>
 
           {/* Chat Area */}
-          <Card className={`md:col-span-2 flex flex-col ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
+          <Card className={`md:col-span-2 flex flex-col overflow-hidden ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
             {selectedUser ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b flex items-center justify-between">
+                <div className="p-4 border-b flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-3">
                     <Button
                       size="sm"
@@ -376,7 +382,7 @@ function MessagesContent() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                   <AnimatePresence>
                     {messages.map((message) => {
                       const isOwn = message.senderId === user?.id
@@ -418,7 +424,7 @@ function MessagesContent() {
                 </div>
 
                 {/* Input */}
-                <div className="p-4 border-t">
+                <div className="p-4 border-t shrink-0">
                   <div className="flex gap-2">
                     <Textarea
                       value={newMessage}

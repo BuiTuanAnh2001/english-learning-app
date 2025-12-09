@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useAuth } from '@/lib/contexts/auth-context'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -37,7 +37,7 @@ interface Conversation {
   unreadCount: number
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const { isAuthenticated, user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -370,5 +370,17 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-20 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <MessagesContent />
+    </Suspense>
   )
 }

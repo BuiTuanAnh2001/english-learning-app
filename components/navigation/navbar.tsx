@@ -53,10 +53,8 @@ export function Navbar() {
       
       let notifChannel: any = null
       let messageChannel: any = null
-      let pollInterval: NodeJS.Timeout | null = null
-      let isRealtimeConnected = false
       
-      // Subscribe to realtime updates
+      // Subscribe to realtime updates only - no polling
       try {
         const supabase = createBrowserClient()
         
@@ -71,7 +69,7 @@ export function Navbar() {
               table: 'Notification'
             },
             (payload: any) => {
-              console.log('Navbar notification update:', payload)
+              console.log('📊 Navbar notification update:', payload)
               if (payload.new?.userId === user.id || payload.old?.userId === user.id) {
                 fetchUnreadCounts()
               }
@@ -80,7 +78,7 @@ export function Navbar() {
           .subscribe((status: string) => {
             console.log('Navbar notification channel:', status)
             if (status === 'SUBSCRIBED') {
-              isRealtimeConnected = true
+              console.log('✅ Navbar notifications realtime - NO POLLING!')
             }
           })
         
@@ -95,7 +93,7 @@ export function Navbar() {
               table: 'Message'
             },
             (payload: any) => {
-              console.log('Navbar message update:', payload)
+              console.log('📊 Navbar message update:', payload)
               if (payload.new?.receiverId === user.id || payload.old?.receiverId === user.id) {
                 fetchUnreadCounts()
               }
@@ -103,24 +101,19 @@ export function Navbar() {
           )
           .subscribe((status: string) => {
             console.log('Navbar message channel:', status)
+            if (status === 'SUBSCRIBED') {
+              console.log('✅ Navbar messages realtime - NO POLLING!')
+            }
           })
       } catch (error) {
         console.error('Navbar realtime error:', error)
       }
-      
-      // Fallback polling
-      pollInterval = setInterval(() => {
-        fetchUnreadCounts()
-      }, isRealtimeConnected ? 30000 : 10000) // 30s if realtime, 10s if not
       
       return () => {
         if (notifChannel || messageChannel) {
           const supabase = createBrowserClient()
           if (notifChannel) supabase.removeChannel(notifChannel)
           if (messageChannel) supabase.removeChannel(messageChannel)
-        }
-        if (pollInterval) {
-          clearInterval(pollInterval)
         }
       }
     }

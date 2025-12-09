@@ -72,8 +72,6 @@ export default function NotificationsPage() {
     if (!isAuthenticated || !user?.id) return
     
     let realtimeChannel: any = null
-    let pollInterval: NodeJS.Timeout | null = null
-    let isRealtimeConnected = false
     
     try {
       const supabase = createBrowserClient()
@@ -91,7 +89,7 @@ export default function NotificationsPage() {
             table: 'Notification'
           },
           (payload: any) => {
-            console.log('Realtime notification event:', payload)
+            console.log('🔔 Realtime notification event:', payload)
             // Check if notification is for current user
             if (payload.new?.userId === user.id) {
               fetchNotifications(true)
@@ -115,29 +113,19 @@ export default function NotificationsPage() {
         .subscribe((status: string) => {
           console.log('Notification realtime status:', status)
           if (status === 'SUBSCRIBED') {
-            isRealtimeConnected = true
-            console.log('✅ Realtime connected for notifications')
+            console.log('✅ Realtime connected - NO POLLING!')
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn('⚠️ Notification realtime failed, using polling')
-            isRealtimeConnected = false
+            console.error('❌ Notification realtime failed')
           }
         })
     } catch (error) {
       console.error('Notification realtime setup error:', error)
     }
     
-    // Fallback polling
-    pollInterval = setInterval(() => {
-      fetchNotifications(true)
-    }, isRealtimeConnected ? 15000 : 5000) // 15s if realtime, 5s if not
-    
     return () => {
       if (realtimeChannel) {
         const supabase = createBrowserClient()
         supabase.removeChannel(realtimeChannel)
-      }
-      if (pollInterval) {
-        clearInterval(pollInterval)
       }
     }
   }, [isAuthenticated, user?.id, notificationPermission])

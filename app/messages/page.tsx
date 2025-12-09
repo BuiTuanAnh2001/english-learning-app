@@ -83,60 +83,85 @@ function MessagesContent() {
     if (selectedUser) {
       fetchMessages(selectedUser.id)
       
-      // Subscribe to realtime messages
-      const supabase = createBrowserClient()
-      const channel = supabase
-        .channel('messages-channel')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'Message',
-            filter: `receiverId=eq.${user?.id}`
-          },
-          (payload) => {
-            // Only update if message is from the selected user
-            if (payload.new.senderId === selectedUser.id) {
-              fetchMessages(selectedUser.id)
-              
-              // Show browser notification
-              if (notificationPermission === 'granted') {
-                const notification = new Notification(`New message from ${selectedUser.name || selectedUser.email}`, {
-                  body: payload.new.content,
-                  icon: '/icon.png',
-                  tag: `message-${payload.new.id}`
-                })
-                notification.onclick = () => {
-                  window.focus()
-                  notification.close()
+      let realtimeChannel: any = null
+      let pollInterval: NodeJS.Timeout | null = null
+      let isRealtimeConnected = false
+      
+      // Try to setup Realtime
+      try {
+        const supabase = createBrowserClient()
+        realtimeChannel = supabase
+          .channel('messages-channel', {
+            config: {
+              broadcast: { self: true },
+              presence: { key: user?.id }
+            }
+          })
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'Message'
+            },
+            (payload) => {
+              console.log('Realtime message event:', payload)
+              // Update if message involves current chat
+              if (payload.new?.senderId === selectedUser.id || 
+                  payload.new?.receiverId === selectedUser.id ||
+                  payload.new?.senderId === user?.id ||
+                  payload.new?.receiverId === user?.id) {
+                fetchMessages(selectedUser.id)
+                fetchConversations()
+                
+                // Show notification for incoming messages
+                if (payload.new?.senderId === selectedUser.id && 
+                    payload.new?.receiverId === user?.id &&
+                    notificationPermission === 'granted') {
+                  const notification = new Notification(
+                    `${selectedUser.name || selectedUser.email}`,
+                    {
+                      body: payload.new.content,
+                      icon: '/icon.png',
+                      tag: `message-${payload.new.id}`
+                    }
+                  )
+                  notification.onclick = () => {
+                    window.focus()
+                    notification.close()
+                  }
                 }
               }
-            } else {
-              // Update conversation list for messages from other users
-              fetchConversations()
             }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'Message',
-            filter: `senderId=eq.${user?.id}`
-          },
-          (payload) => {
-            // Update read status for sent messages
-            if (payload.new.receiverId === selectedUser.id) {
-              fetchMessages(selectedUser.id)
+          )
+          .subscribe((status) => {
+            console.log('Realtime status:', status)
+            if (status === 'SUBSCRIBED') {
+              isRealtimeConnected = true
+              console.log('✅ Realtime connected for messages')
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              console.warn('⚠️ Realtime failed, using polling fallback')
+              isRealtimeConnected = false
             }
-          }
-        )
-        .subscribe()
+          })
+      } catch (error) {
+        console.error('Realtime setup error:', error)
+      }
+      
+      // Fallback polling (always run, but less frequent if realtime works)
+      pollInterval = setInterval(() => {
+        const interval = isRealtimeConnected ? 10000 : 3000 // 10s if realtime, 3s if not
+        fetchMessages(selectedUser.id)
+      }, 3000)
       
       return () => {
-        supabase.removeChannel(channel)
+        if (realtimeChannel) {
+          const supabase = createBrowserClient()
+          supabase.removeChannel(realtimeChannel)
+        }
+        if (pollInterval) {
+          clearInterval(pollInterval)
+        }
       }
     }
   }, [selectedUser, user?.id, notificationPermission])
@@ -250,9 +275,9 @@ function MessagesContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-20">
-      <div className="container mx-auto px-4 max-w-7xl h-[calc(100vh-5rem)]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full py-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-20 pb-4">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-7rem)] py-4">
           {/* Conversations List */}
           <Card className={`md:col-span-1 flex flex-col ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-4 border-b">

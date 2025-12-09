@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/contexts/auth-context"
 import { LessonsProvider } from "@/lib/contexts/lessons-context"
 import { Navbar } from "@/components/navigation/navbar"
 import { Footer } from "@/components/navigation/footer"
+import { GlobalNotificationListener } from "@/components/global-notification-listener"
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://vocaplanet.online'),
@@ -128,6 +129,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             <LessonsProvider>
+              <GlobalNotificationListener />
               <div className="flex flex-col min-h-screen">
                 <Navbar />
                 <main className="flex-1">{children}</main>

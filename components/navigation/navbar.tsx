@@ -51,46 +51,77 @@ export function Navbar() {
     if (isAuthenticated && user) {
       fetchUnreadCounts()
       
+      let notifChannel: any = null
+      let messageChannel: any = null
+      let pollInterval: NodeJS.Timeout | null = null
+      let isRealtimeConnected = false
+      
       // Subscribe to realtime updates
-      const supabase = createBrowserClient()
+      try {
+        const supabase = createBrowserClient()
+        
+        // Subscribe to notifications
+        notifChannel = supabase
+          .channel('navbar-notifications')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'Notification'
+            },
+            (payload: any) => {
+              console.log('Navbar notification update:', payload)
+              if (payload.new?.userId === user.id || payload.old?.userId === user.id) {
+                fetchUnreadCounts()
+              }
+            }
+          )
+          .subscribe((status) => {
+            console.log('Navbar notification channel:', status)
+            if (status === 'SUBSCRIBED') {
+              isRealtimeConnected = true
+            }
+          })
+        
+        // Subscribe to messages
+        messageChannel = supabase
+          .channel('navbar-messages')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'Message'
+            },
+            (payload: any) => {
+              console.log('Navbar message update:', payload)
+              if (payload.new?.receiverId === user.id || payload.old?.receiverId === user.id) {
+                fetchUnreadCounts()
+              }
+            }
+          )
+          .subscribe((status) => {
+            console.log('Navbar message channel:', status)
+          })
+      } catch (error) {
+        console.error('Navbar realtime error:', error)
+      }
       
-      // Subscribe to notifications
-      const notifChannel = supabase
-        .channel('navbar-notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Notification',
-            filter: `userId=eq.${user.id}`
-          },
-          () => {
-            fetchUnreadCounts()
-          }
-        )
-        .subscribe()
-      
-      // Subscribe to messages
-      const messageChannel = supabase
-        .channel('navbar-messages')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Message',
-            filter: `receiverId=eq.${user.id}`
-          },
-          () => {
-            fetchUnreadCounts()
-          }
-        )
-        .subscribe()
+      // Fallback polling
+      pollInterval = setInterval(() => {
+        fetchUnreadCounts()
+      }, isRealtimeConnected ? 30000 : 10000) // 30s if realtime, 10s if not
       
       return () => {
-        supabase.removeChannel(notifChannel)
-        supabase.removeChannel(messageChannel)
+        if (notifChannel || messageChannel) {
+          const supabase = createBrowserClient()
+          if (notifChannel) supabase.removeChannel(notifChannel)
+          if (messageChannel) supabase.removeChannel(messageChannel)
+        }
+        if (pollInterval) {
+          clearInterval(pollInterval)
+        }
       }
     }
   }, [isAuthenticated, user])

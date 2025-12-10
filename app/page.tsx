@@ -1,119 +1,63 @@
 'use client'
 
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Target, Headphones, MessageCircle, BarChart, Sparkles, Globe, BookOpen, Zap } from "lucide-react"
-import { categories } from "@/lib/data/lessons"
-import { useEffect, useState } from "react"
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 60 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6 },
-}
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-// Stats counter animation
-const stats = [
-  { value: 500, suffix: "+", label: "Từ vựng", icon: BookOpen },
-  { value: 50, suffix: "+", label: "Bài học", icon: Target },
-  { value: 100, suffix: "+", label: "Hội thoại", icon: MessageCircle },
-  { value: 24, suffix: "/7", label: "Học mọi lúc", icon: Zap },
-]
+import { MessageCircle, Users, Shield, Zap, Sparkles, Globe } from "lucide-react"
 
 const features = [
   {
-    icon: Target,
-    title: "Học theo chủ đề",
-    description: "Các bài học được phân loại theo chủ đề thực tế như giao tiếp hàng ngày, công việc, du lịch.",
-    gradient: "from-orange-500 to-red-500",
-  },
-  {
-    icon: Headphones,
-    title: "Luyện nghe với audio",
-    description: "Học phát âm chuẩn với các đoạn hội thoại thực tế từ người bản xứ.",
-    gradient: "from-green-500 to-emerald-500",
-  },
-  {
     icon: MessageCircle,
-    title: "Thực hành giao tiếp",
-    description: "Rèn luyện kỹ năng giao tiếp qua các tình huống thực tế trong cuộc sống.",
+    title: "Chat Realtime",
+    description: "Nhắn tin tức thì với công nghệ WebSocket, tin nhắn được gửi và nhận ngay lập tức.",
     gradient: "from-blue-500 to-cyan-500",
   },
   {
-    icon: BarChart,
-    title: "Theo dõi tiến độ",
-    description: "Đo lường và theo dõi quá trình học tập của bạn một cách chi tiết.",
+    icon: Users,
+    title: "Chat Nhóm",
+    description: "Tạo nhóm chat với bạn bè, đồng nghiệp. Quản lý thành viên và phân quyền dễ dàng.",
     gradient: "from-purple-500 to-pink-500",
+  },
+  {
+    icon: Shield,
+    title: "Bảo Mật Cao",
+    description: "Đăng nhập an toàn với Google OAuth. Dữ liệu được mã hóa và bảo vệ tuyệt đối.",
+    gradient: "from-green-500 to-emerald-500",
+  },
+  {
+    icon: Zap,
+    title: "Nhanh & Mượt",
+    description: "Giao diện hiện đại, tối ưu hiệu năng. Trải nghiệm chat mượt mà trên mọi thiết bị.",
+    gradient: "from-orange-500 to-red-500",
   },
 ]
 
-// Counter animation hook
-function useCounter(end: number, duration: number = 2000) {
-  const [count, setCount] = useState(0)
-  
-  useEffect(() => {
-    let startTime: number | null = null
-    let animationFrame: number
-    
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const progress = Math.min((timestamp - startTime) / duration, 1)
-      setCount(Math.floor(progress * end))
-      
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate)
-      }
-    }
-    
-    animationFrame = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrame)
-  }, [end, duration])
-  
-  return count
-}
-
 export default function Home() {
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Vocaplanet',
-    url: 'https://vocaplanet.online',
-    description: 'Học tiếng Anh giao tiếp online miễn phí',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: 'https://vocaplanet.online/lessons?search={search_term_string}',
-      'query-input': 'required name=search_term_string'
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Vocaplanet',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://vocaplanet.online/logo.png'
-      }
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/chat')
     }
+  }, [status, router])
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <div className="flex flex-col">
-      {/* Hero Section with Simple Gradient */}
+    <div className="flex flex-col">
+      {/* Hero Section */}
       <section className="relative min-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 py-16 md:py-24 lg:py-32">
-        {/* Simple background pattern - no animation */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
           <div 
             className="absolute inset-0"
@@ -128,94 +72,68 @@ export default function Home() {
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             className="flex flex-col items-center text-center space-y-8"
-            initial="initial"
-            animate="animate"
-            variants={staggerContainer}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
           >
             <motion.div
-              variants={fadeInUp}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
               className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 shadow-lg"
             >
               <Sparkles className="w-4 h-4 text-yellow-400 animate-pulse" />
-              <span className="text-sm font-semibold text-white">✨ Học tiếng Anh thông minh với AI</span>
+              <span className="text-sm font-semibold text-white">✨ Kết nối mọi lúc, mọi nơi</span>
             </motion.div>
 
             <motion.h1
               className="text-5xl md:text-6xl lg:text-8xl font-bold tracking-tight"
-              variants={fadeInUp}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              <motion.span 
-                className="inline-block bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent"
-                animate={{
-                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                }}
-                transition={{ duration: 5, repeat: Infinity }}
-                style={{ backgroundSize: "200% 200%" }}
-              >
-                Vocaplanet
-              </motion.span>
+              <span className="inline-block bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                ChatApp
+              </span>
               <br />
               <span className="text-white/90 text-3xl md:text-4xl lg:text-5xl font-light mt-4 block">
-                Learn & Share Words
+                Chat Thông Minh & Hiện Đại
               </span>
             </motion.h1>
             
             <motion.p
               className="text-lg md:text-xl lg:text-2xl text-blue-100/80 max-w-3xl leading-relaxed"
-              variants={fadeInUp}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
             >
-              Nâng cao khả năng giao tiếp tiếng Anh với{" "}
-              <span className="font-bold text-cyan-400">phương pháp học thông minh</span>, 
-              bài học tương tác, thực hành phát âm AI và nội dung được cập nhật liên tục
+              Trải nghiệm nhắn tin{" "}
+              <span className="font-bold text-cyan-400">thời gian thực</span> với 
+              giao diện đẹp mắt, bảo mật cao và nhiều tính năng vượt trội
             </motion.p>
             
             <motion.div
               className="flex flex-col sm:flex-row gap-4 mt-8"
-              variants={fadeInUp}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
             >
-              <Link href="/lessons">
-                <Button size="lg" className="group w-full sm:w-auto text-lg px-10 py-7 rounded-2xl shadow-2xl shadow-blue-500/40 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 hover:from-blue-600 hover:via-cyan-600 hover:to-blue-700 border-0 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/60">
-                  <span>Bắt đầu học ngay</span>
-                  <motion.span 
-                    className="ml-2 inline-block"
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    →
-                  </motion.span>
+              <Link href="/auth/signin">
+                <Button size="lg" className="group w-full sm:w-auto text-lg px-10 py-7 rounded-2xl shadow-2xl shadow-blue-500/40 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 hover:from-blue-600 hover:via-cyan-600 hover:to-blue-700 border-0 transition-all duration-300 hover:scale-105">
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  <span>Bắt đầu Chat</span>
                 </Button>
               </Link>
-              <Link href="/progress">
+              <Link href="/auth/signup">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-2xl border-2 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-105">
-                  <Globe className="w-5 h-5 mr-2" />
-                  Xem tiến độ
+                  <Users className="w-5 h-5 mr-2" />
+                  Đăng ký ngay
                 </Button>
               </Link>
-            </motion.div>
-
-            {/* Stats Section */}
-            <motion.div 
-              className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 mt-16 w-full max-w-4xl"
-              variants={fadeInUp}
-            >
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={index}
-                  className="text-center p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300"
-                  whileHover={{ scale: 1.05, y: -5 }}
-                >
-                  <stat.icon className="w-8 h-8 mx-auto mb-3 text-cyan-400" />
-                  <div className="text-3xl md:text-4xl font-bold text-white">
-                    {stat.value}{stat.suffix}
-                  </div>
-                  <div className="text-blue-200/70 text-sm mt-1">{stat.label}</div>
-                </motion.div>
-              ))}
             </motion.div>
           </motion.div>
         </div>
 
-        {/* Bottom wave decoration */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
             <path 
@@ -230,41 +148,36 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-white dark:bg-slate-900">
         <div className="container mx-auto px-4">
           <motion.div
-            initial="initial"
-            whileInView="animate"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            variants={staggerContainer}
+            transition={{ duration: 0.6 }}
             className="space-y-12"
           >
-            <motion.div className="text-center space-y-4" variants={fadeInUp}>
+            <div className="text-center space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Tại sao chọn Vocaplanet?
+                Tính năng nổi bật
               </h2>
               <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-                Phương pháp học hiện đại, tập trung vào kỹ năng giao tiếp thực tế
+                Mọi thứ bạn cần cho một ứng dụng chat hiện đại
               </p>
-            </motion.div>
+            </div>
 
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
-              variants={staggerContainer}
-            >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {features.map((feature, index) => (
                 <motion.div 
-                  key={index} 
-                  variants={fadeInUp}
-                  whileHover={{ y: -12, scale: 1.03 }}
-                  transition={{ duration: 0.3 }}
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ y: -8, scale: 1.02 }}
                 >
                   <Card className="h-full border-0 shadow-xl hover:shadow-2xl transition-all duration-500 bg-white dark:bg-slate-800 rounded-3xl overflow-hidden group">
                     <CardHeader className="space-y-4">
-                      <motion.div 
-                        className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
-                        whileHover={{ rotate: [0, -10, 10, 0] }}
-                        transition={{ duration: 0.5 }}
-                      >
+                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                         <feature.icon className="w-8 h-8 text-white" />
-                      </motion.div>
+                      </div>
                       <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">{feature.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -275,87 +188,13 @@ export default function Home() {
                   </Card>
                 </motion.div>
               ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Categories Section */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-10 w-72 h-72 bg-purple-400/10 rounded-full blur-3xl" />
-        </div>
-        
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="space-y-12"
-          >
-            <motion.div className="text-center space-y-4" variants={fadeInUp}>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Chủ đề học tập
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-                Chọn chủ đề phù hợp với nhu cầu và mục tiêu của bạn
-              </p>
-            </motion.div>
-
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-              variants={staggerContainer}
-            >
-              {categories.map((category, index) => (
-                <motion.div 
-                  key={category.id} 
-                  variants={fadeInUp}
-                  whileHover={{ y: -8 }}
-                >
-                  <Link href={`/lessons?category=${category.id}`}>
-                    <Card className="h-full cursor-pointer border-2 border-transparent hover:border-blue-400 transition-all duration-300 group bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl">
-                      <CardHeader>
-                        <motion.div 
-                          className="text-5xl mb-4"
-                          whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                          transition={{ duration: 0.4 }}
-                        >
-                          {category.icon}
-                        </motion.div>
-                        <CardTitle className="group-hover:text-blue-600 transition-colors">{category.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <CardDescription className="leading-relaxed">
-                          {category.description}
-                        </CardDescription>
-                        <div className="flex items-center gap-2 mt-4">
-                          <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                            {category.lessonCount} bài học
-                          </span>
-                          <motion.span
-                            className="text-blue-600"
-                            animate={{ x: [0, 5, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                          >
-                            →
-                          </motion.span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
+            </div>
           </motion.div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 md:py-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
-        {/* Animated background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div
             className="absolute -top-20 -left-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"
@@ -367,63 +206,38 @@ export default function Home() {
             animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.3, 0.5] }}
             transition={{ duration: 6, repeat: Infinity }}
           />
-          {/* Floating shapes */}
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-4 h-4 bg-white/20 rounded-full"
-              style={{
-                left: `${15 + i * 15}%`,
-                top: `${20 + (i % 3) * 25}%`,
-              }}
-              animate={{
-                y: [0, -30, 0],
-                opacity: [0.2, 0.5, 0.2],
-              }}
-              transition={{
-                duration: 3 + i * 0.5,
-                repeat: Infinity,
-                delay: i * 0.3,
-              }}
-            />
-          ))}
         </div>
         
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
-            initial="initial"
-            whileInView="animate"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            variants={fadeInUp}
+            transition={{ duration: 0.6 }}
             className="text-center text-white space-y-8"
           >
-            <motion.h2 
-              className="text-4xl md:text-5xl lg:text-6xl font-bold"
-              animate={{ opacity: [0.9, 1, 0.9] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            >
-              Sẵn sàng bắt đầu hành trình?
-            </motion.h2>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold">
+              Sẵn sàng trò chuyện?
+            </h2>
             <p className="text-xl md:text-2xl opacity-90 max-w-3xl mx-auto">
-              Tham gia cùng hàng nghìn người học và trải nghiệm phương pháp học tiếng Anh hiệu quả nhất
+              Tham gia ngay hôm nay và trải nghiệm cách chat hiện đại nhất
             </p>
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Link href="/lessons">
+              <Link href="/auth/signin">
                 <Button
                   size="lg"
                   className="mt-4 text-lg px-12 py-8 rounded-2xl bg-white text-blue-600 hover:bg-blue-50 shadow-2xl shadow-black/20 font-bold"
                 >
-                  🚀 Bắt đầu học miễn phí
+                  🚀 Bắt đầu Chat ngay
                 </Button>
               </Link>
             </motion.div>
           </motion.div>
         </div>
       </section>
-      </div>
-    </>
+    </div>
   )
 }

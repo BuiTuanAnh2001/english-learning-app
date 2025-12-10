@@ -1,7 +1,7 @@
 {
-  "name": "Vocaplanet - Học Tiếng Anh Online",
-  "short_name": "Vocaplanet",
-  "description": "Học tiếng Anh giao tiếp online miễn phí với phương pháp tương tác và luyện phát âm AI",
+  "name": "ChatApp - Ứng dụng Chat Hiện Đại",
+  "short_name": "ChatApp",
+  "description": "Ứng dụng chat thời gian thực với Google OAuth, chat nhóm, và nhiều tính năng hiện đại",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -20,21 +20,14 @@
       "type": "image/png"
     }
   ],
-  "categories": ["education", "productivity"],
+  "categories": ["social", "productivity"],
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Bài học",
-      "short_name": "Lessons",
-      "description": "Xem tất cả bài học",
-      "url": "/lessons",
-      "icons": [{ "src": "/icon.svg", "sizes": "96x96" }]
-    },
-    {
-      "name": "Tiến độ",
-      "short_name": "Progress",
-      "description": "Xem tiến độ học tập",
-      "url": "/progress",
+      "name": "Chat",
+      "short_name": "Chat",
+      "description": "Mở giao diện chat",
+      "url": "/chat",
       "icons": [{ "src": "/icon.svg", "sizes": "96x96" }]
     }
   ]

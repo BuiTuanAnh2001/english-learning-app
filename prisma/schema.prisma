@@ -1,6 +1,3 @@
-// Prisma schema for English Learning App
-// This is your database schema definition
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,376 +7,175 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model for authentication
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // Hashed password
-  name      String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  progress        UserProgress[]
-  quizResults     QuizResult[]
-  vocabularyNotes VocabularyNote[]
+  id            String         @id @default(cuid())
+  email         String         @unique
+  emailVerified DateTime?
+  name          String?
+  avatar        String?
+  image         String?        // NextAuth compatibility
+  provider      String?        // google, credentials
+  providerId    String?
+  password      String?        // for email/password auth
+  bio           String?
+  status        UserStatus     @default(OFFLINE)
+  lastSeen      DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   
-  // Social features
-  sentFriendRequests     Friendship[] @relation("SentRequests")
-  receivedFriendRequests Friendship[] @relation("ReceivedRequests")
-  sentMessages           Message[]    @relation("SentMessages")
-  receivedMessages       Message[]    @relation("ReceivedMessages")
-  notifications          Notification[]
+  // Relations
+  sentMessages      Message[]           @relation("SentMessages")
+  conversationMembers ConversationMember[]
+  typingStatus      TypingStatus[]
+  
+  // NextAuth relations
+  accounts          Account[]
+  sessions          Session[]
 
   @@index([email])
 }
 
-enum Role {
-  USER
-  ADMIN
-}
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
-// Category model
-model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String
-  icon        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  lessons Lesson[]
-
-  @@index([name])
-}
-
-// Lesson model
-model Lesson {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  level       Level
-  duration    String
-  thumbnailUrl String?
-  categoryId  String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  vocabulary  Vocabulary[]
-  phrases     Phrase[]
-  dialogues   Dialogue[]
-  objectives  Objective[]
-  tips        Tip[]
-  progress    UserProgress[]
-  quizzes     Quiz[]
-
-  @@index([categoryId])
-  @@index([level])
-}
-
-enum Level {
-  beginner
-  intermediate
-  advanced
-}
-
-// Vocabulary model
-model Vocabulary {
-  id            String   @id @default(cuid())
-  word          String
-  pronunciation String
-  meaning       String
-  example       String
-  imageUrl      String?
-  tags          String[] // Array of tags
-  lessonId      String
-  order         Int      @default(0) // Order in lesson
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@index([lessonId])
-  @@index([word])
-}
-
-// Phrase model
-model Phrase {
-  id        String   @id @default(cuid())
-  phrase    String
-  meaning   String
-  example   String
-  context   String?
-  imageUrl  String?
-  lessonId  String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@index([lessonId])
-}
-
-// Dialogue model
-model Dialogue {
-  id          String   @id @default(cuid())
-  speaker     String
-  text        String
-  translation String?
-  emotion     String?
-  gender      Gender?
-  lessonId    String
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@index([lessonId])
-}
-
-enum Gender {
-  male
-  female
-}
-
-// Objective model
-model Objective {
-  id        String   @id @default(cuid())
-  text      String
-  lessonId  String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-
-  // Relations
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@index([lessonId])
-}
-
-// Tip model
-model Tip {
-  id        String   @id @default(cuid())
-  text      String
-  lessonId  String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-
-  // Relations
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@index([lessonId])
-}
-
-// User progress tracking
-model UserProgress {
-  id         String   @id @default(cuid())
-  userId     String
-  lessonId   String
-  completed  Boolean  @default(false)
-  progress   Int      @default(0) // 0-100
-  lastAccess DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@index([userId])
-  @@index([lessonId])
-}
-
-// Quiz model
-model Quiz {
-  id        String         @id @default(cuid())
-  lessonId  String
-  title     String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-
-  // Relations
-  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  questions QuizQuestion[]
-  results   QuizResult[]
-
-  @@index([lessonId])
-}
-
-// Quiz question model
-model QuizQuestion {
-  id            String       @id @default(cuid())
-  quizId        String
-  type          QuestionType
-  question      String
-  options       String[] // For multiple choice
-  correctAnswer String // JSON string for array answers
-  explanation   String?
-  points        Int          @default(1)
-  order         Int          @default(0)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  // Relations
-  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  answers QuizAnswer[]
-
-  @@index([quizId])
-}
-
-enum QuestionType {
-  multiple_choice
-  fill_blank
-  match
-  true_false
-}
-
-// Quiz result model
-model QuizResult {
-  id              String   @id @default(cuid())
-  userId          String
-  quizId          String
-  score           Int
-  totalQuestions  Int
-  correctAnswers  Int
-  timeSpent       Int // in seconds
-  completedAt     DateTime @default(now())
-
-  // Relations
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  answers QuizAnswer[]
-
-  @@index([userId])
-  @@index([quizId])
-}
-
-// Individual quiz answer
-model QuizAnswer {
-  id         String   @id @default(cuid())
-  resultId   String
-  questionId String
-  userAnswer String // JSON string for array answers
-  isCorrect  Boolean
-  timeSpent  Int // in seconds
-  createdAt  DateTime @default(now())
-
-  // Relations
-  result   QuizResult   @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@index([resultId])
-  @@index([questionId])
-}
-
-// Vocabulary Notebook - User's personal vocabulary notes
-model VocabularyNote {
-  id            String   @id @default(cuid())
-  userId        String
-  word          String
-  pronunciation String?
-  meaning       String
-  example       String?
-  personalNote  String?  // User's personal note/memory trick
-  context       String?  // Where they learned it (lesson name, etc.)
-  difficulty    Int      @default(3) // 1-5 scale (1=easy, 5=hard)
-  reviewCount   Int      @default(0) // How many times reviewed
-  lastReviewed  DateTime?
-  mastered      Boolean  @default(false)
-  tags          String[] // Custom tags by user
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, word]) // Each user can only save a word once
-  @@index([userId])
-  @@index([word])
-  @@index([mastered])
+  @@unique([provider, providerAccountId])
 }
 
-// Friendship model for friend connections
-model Friendship {
-  id         String           @id @default(cuid())
-  senderId   String
-  receiverId String
-  status     FriendshipStatus @default(PENDING)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Conversation {
+  id          String       @id @default(cuid())
+  name        String?      // For group chats
+  type        ConversationType @default(DIRECT)
+  avatar      String?      // For group chats
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
   // Relations
-  sender   User @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
-
-  @@unique([senderId, receiverId]) // Prevent duplicate friend requests
-  @@index([senderId])
-  @@index([receiverId])
-  @@index([status])
+  members     ConversationMember[]
+  messages    Message[]
 }
 
-enum FriendshipStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  BLOCKED
+model ConversationMember {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  role           MemberRole   @default(MEMBER)
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime     @default(now())
+  
+  // Relations
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
 }
 
-// Message model for chat between friends
 model Message {
-  id         String    @id @default(cuid())
-  senderId   String
-  receiverId String
-  content    String    @db.Text
-  read       Boolean   @default(false)
-  readAt     DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  type           MessageType  @default(TEXT)
+  fileUrl        String?
+  fileName       String?
+  fileSize       Int?
+  replyToId      String?
+  edited         Boolean      @default(false)
+  deleted        Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
   // Relations
-  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        Message[]    @relation("MessageReplies")
+  readReceipts   ReadReceipt[]
+  
+  @@index([conversationId])
   @@index([senderId])
-  @@index([receiverId])
   @@index([createdAt])
-  @@index([read])
 }
 
-// Notification model for push notifications
-model Notification {
-  id        String           @id @default(cuid())
+model ReadReceipt {
+  id        String   @id @default(cuid())
+  messageId String
   userId    String
-  type      NotificationType
-  title     String
-  message   String
-  data      String?          @db.Text // JSON data for additional info
-  read      Boolean          @default(false)
-  readAt    DateTime?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
+  readAt    DateTime @default(now())
+  
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([read])
-  @@index([createdAt])
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@index([messageId])
 }
 
-enum NotificationType {
-  FRIEND_REQUEST
-  FRIEND_ACCEPTED
-  NEW_MESSAGE
-  LESSON_REMINDER
-  ACHIEVEMENT
+model TypingStatus {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  isTyping       Boolean      @default(true)
+  updatedAt      DateTime     @updatedAt
+  
+  // Relations
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+}
+
+enum UserStatus {
+  ONLINE
+  AWAY
+  BUSY
+  OFFLINE
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
 }

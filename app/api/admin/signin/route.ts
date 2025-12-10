@@ -25,11 +25,17 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         password: true,
-        role: true,
       },
     })
 
     if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid credentials' },
+        { status: 401 }
+      )
+    }
+
+    if (!user.password) {
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -51,7 +57,6 @@ export async function POST(request: NextRequest) {
       {
         userId: user.id,
         email: user.email,
-        role: user.role,
       },
       JWT_SECRET,
       { expiresIn: '7d' }

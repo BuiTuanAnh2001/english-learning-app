@@ -98,7 +98,7 @@ export default function RealtimeDebugPage() {
             <li>Open the chat app in another tab</li>
             <li>Send a message in a conversation</li>
             <li>Come back here and check if any events were received</li>
-            <li>If you see "✅ RECEIVED EVENT", realtime is working!</li>
+            <li>If you see &quot;✅ RECEIVED EVENT&quot;, realtime is working!</li>
           </ol>
         </div>
 

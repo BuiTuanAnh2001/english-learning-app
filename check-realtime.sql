@@ -1,18 +1,23 @@
 -- Script kiểm tra Supabase Realtime setup
 -- Chạy trong Supabase SQL Editor
 
--- 1. Kiểm tra table name chính xác
+-- BƯỚC 1: Kiểm tra table name chính xác
 SELECT tablename 
 FROM pg_tables 
 WHERE schemaname = 'public' 
 AND tablename LIKE '%essage%';
 
--- 2. Kiểm tra Realtime publication (tables được enable cho realtime)
+-- BƯỚC 2: Kiểm tra Realtime publication (tables được enable cho realtime)
 SELECT schemaname, tablename 
 FROM pg_publication_tables 
 WHERE pubname = 'supabase_realtime';
 
--- 3. Kiểm tra RLS policies cho Message table
+-- BƯỚC 3: Kiểm tra RLS có được enable không
+SELECT schemaname, tablename, rowsecurity 
+FROM pg_tables 
+WHERE tablename = 'Message';
+
+-- BƯỚC 4: Kiểm tra RLS policies hiện tại
 SELECT 
   schemaname,
   tablename,
@@ -20,30 +25,27 @@ SELECT
   permissive,
   roles,
   cmd,
-  qual,
-  with_check
+  qual
 FROM pg_policies 
-WHERE tablename = 'Message' OR tablename = 'message';
+WHERE tablename = 'Message';
 
--- 4. Enable Realtime cho Message table (nếu chưa enable)
--- CHẠY LỆNH NÀY nếu bước 2 không thấy Message table
+-- BƯỚC 5: TẮT RLS HOÀN TOÀN ĐỂ TEST (chạy lệnh này)
+ALTER TABLE "Message" DISABLE ROW LEVEL SECURITY;
+
+-- Nếu muốn BẬT lại RLS sau khi test xong:
+-- ALTER TABLE "Message" ENABLE ROW LEVEL SECURITY;
+
+-- BƯỚC 6: Hoặc tạo policy CHO PHÉP TẤT CẢ (nếu muốn giữ RLS)
+DROP POLICY IF EXISTS "Allow all for authenticated users" ON "Message";
+CREATE POLICY "Allow all for authenticated users"
+ON "Message"
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+-- BƯỚC 7: Enable Realtime cho Message table (nếu chưa enable)
 ALTER PUBLICATION supabase_realtime ADD TABLE "Message";
 
--- Hoặc nếu table name là lowercase:
--- ALTER PUBLICATION supabase_realtime ADD TABLE "message";
-
--- 5. Tạo policy cho realtime (nếu chưa có)
--- Policy này cho phép authenticated users xem tất cả messages
-DROP POLICY IF EXISTS "Enable realtime for Message" ON "Message";
-CREATE POLICY "Enable realtime for Message"
-ON "Message"
-FOR SELECT
-TO authenticated
-USING (true);
-
--- 6. Kiểm tra xem user có thể query Message table không
+-- BƯỚC 8: Test query
 SELECT COUNT(*) as total_messages FROM "Message";
-
--- 7. Test insert một message (để trigger realtime)
--- INSERT INTO "Message" (id, "conversationId", "senderId", content, type)
--- VALUES ('test-' || gen_random_uuid(), 'YOUR_CONVERSATION_ID', 'YOUR_USER_ID', 'Test realtime message', 'TEXT');

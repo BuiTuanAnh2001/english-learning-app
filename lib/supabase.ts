@@ -38,15 +38,13 @@ export const createBrowserClient = () => {
     return browserClientInstance
   }
   
-  const projectRef = 'vehatkcukaloprvqcejz' // From your DATABASE_URL
+  const projectRef = 'vehatkcukaloprvqcejz'
   const url = `https://${projectRef}.supabase.co`
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  // Phải hardcode hoặc dùng next.config.js để expose NEXT_PUBLIC_*
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaGF0a2N1a2Fsb3BydnFjZWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzM5NTUsImV4cCI6MjA3OTgwOTk1NX0.jn_5NZQhpV65dh8wgIdELp7HPTs1C9RmT-GwjNIo4ds'
   
-  if (!anonKey) {
-    console.error('❌ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing!')
-  } else {
-    console.log('✅ Supabase client created:', url)
-  }
+  console.log('✅ Supabase client created:', url)
+  console.log('🔑 Using anon key:', anonKey.substring(0, 20) + '...')
   
   browserClientInstance = createClient(url, anonKey, {
     realtime: {
@@ -55,7 +53,8 @@ export const createBrowserClient = () => {
       }
     },
     auth: {
-      persistSession: true
+      persistSession: true,
+      autoRefreshToken: true
     }
   })
   

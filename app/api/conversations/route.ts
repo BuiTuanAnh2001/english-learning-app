@@ -97,17 +97,49 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, userIds, name, type = 'DIRECT' } = body
+    const { userId, participantEmail, userIds, name, type = 'DIRECT' } = body
 
     // For direct messages
-    if (type === 'DIRECT' && userId) {
+    if (type === 'DIRECT') {
+      let targetUserId = userId
+
+      // If participantEmail is provided, find user by email
+      if (participantEmail && !targetUserId) {
+        const targetUser = await prisma.user.findUnique({
+          where: { email: participantEmail }
+        })
+
+        if (!targetUser) {
+          return NextResponse.json({ 
+            success: false,
+            error: 'Không tìm thấy người dùng với email này' 
+          }, { status: 404 })
+        }
+
+        if (targetUser.id === session.user.id) {
+          return NextResponse.json({ 
+            success: false,
+            error: 'Không thể tạo cuộc trò chuyện với chính mình' 
+          }, { status: 400 })
+        }
+
+        targetUserId = targetUser.id
+      }
+
+      if (!targetUserId) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'Vui lòng cung cấp userId hoặc participantEmail' 
+        }, { status: 400 })
+      }
+
       // Check if conversation already exists
       const existing = await prisma.conversation.findFirst({
         where: {
           type: 'DIRECT',
           AND: [
             { members: { some: { userId: session.user.id } } },
-            { members: { some: { userId } } }
+            { members: { some: { userId: targetUserId } } }
           ]
         },
         include: {
@@ -138,7 +170,7 @@ export async function POST(request: NextRequest) {
           members: {
             create: [
               { userId: session.user.id, role: 'MEMBER' },
-              { userId, role: 'MEMBER' }
+              { userId: targetUserId, role: 'MEMBER' }
             ]
           }
         },

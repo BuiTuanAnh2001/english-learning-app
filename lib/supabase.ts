@@ -42,11 +42,20 @@ export const createBrowserClient = () => {
   const url = `https://${projectRef}.supabase.co`
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   
+  if (!anonKey) {
+    console.error('❌ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing!')
+  } else {
+    console.log('✅ Supabase client created:', url)
+  }
+  
   browserClientInstance = createClient(url, anonKey, {
     realtime: {
       params: {
         eventsPerSecond: 10
       }
+    },
+    auth: {
+      persistSession: true
     }
   })
   

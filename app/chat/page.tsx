@@ -98,26 +98,75 @@ export default function ChatPage() {
     const supabase = createBrowserClient()
     
     if (channelRef.current) {
+      console.log('🔌 Removing old channel')
       supabase.removeChannel(channelRef.current)
     }
+    
+    console.log('🔌 Setting up realtime for conversation:', selectedConv)
     
     const channel = supabase
       .channel(`conversation-${selectedConv}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
-        table: 'Message',
+        table: 'message',
         filter: `conversationId=eq.${selectedConv}`
-      }, () => {
-        fetchMessages(selectedConv)
+      }, (payload: any) => {
+        console.log('📨 NEW MESSAGE FROM REALTIME:', payload)
+        const newMessage = payload.new
+        
+        // Thay thế optimistic message bằng message thật từ DB
+        setMessages(prev => {
+          // Xóa optimistic message (nếu có)
+          const filtered = prev.filter(m => !m.id.startsWith('temp-'))
+          
+          // Kiểm tra xem message đã tồn tại chưa (tránh duplicate)
+          const exists = filtered.some(m => m.id === newMessage.id)
+          if (exists) return filtered
+          
+          // Fetch lại để có đầy đủ sender info
+          fetchMessages(selectedConv)
+          return filtered
+        })
+        
+        // Refresh conversation list để update last message
         fetchConversations()
       })
-      .subscribe()
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'message',
+        filter: `conversationId=eq.${selectedConv}`
+      }, (payload: any) => {
+        console.log('✏️ MESSAGE UPDATED:', payload)
+        fetchMessages(selectedConv)
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'message',
+        filter: `conversationId=eq.${selectedConv}`
+      }, (payload: any) => {
+        console.log('🗑️ MESSAGE DELETED:', payload)
+        setMessages(prev => prev.filter(m => m.id !== payload.old.id))
+      })
+      .subscribe((status) => {
+        console.log('🔌 Realtime status:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to realtime!')
+          console.log('📡 Listening for INSERT/UPDATE/DELETE on message table')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Realtime channel error!')
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Realtime subscription timed out!')
+        }
+      })
 
     channelRef.current = channel
 
     return () => {
       if (channelRef.current) {
+        console.log('🔌 Cleaning up realtime channel')
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
       }
@@ -184,8 +233,9 @@ export default function ChatPage() {
         setMessageInput(tempMessage)
         alert('Không thể gửi tin nhắn: ' + (data.error || 'Lỗi không xác định'))
       } else {
-        // Replace optimistic message with real one
-        fetchMessages(selectedConv)
+        console.log('✅ Message sent successfully! Waiting for realtime update...')
+        // Realtime sẽ tự động replace optimistic message
+        // Không cần gọi fetchMessages ở đây
       }
     } catch (error) {
       console.error('Error sending message:', error)

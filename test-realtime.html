@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Supabase Realtime</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>Test Supabase Realtime</h1>
+  <div id="status">Connecting...</div>
+  <div id="messages"></div>
+  
+  <script>
+    const { createClient } = supabase
+    
+    const supabaseUrl = 'https://vehatkcukaloprvqcejz.supabase.co'
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaGF0a2N1a2Fsb3BydnFjZWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzM5NTUsImV4cCI6MjA3OTgwOTk1NX0.jn_5NZQhpV65dh8wgIdELp7HPTs1C9RmT-GwjNIo4ds'
+    
+    const client = createClient(supabaseUrl, supabaseKey)
+    
+    console.log('Testing table name: Message')
+    
+    // Test với Message (chữ hoa)
+    const channel1 = client
+      .channel('test-Message')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'Message'
+      }, (payload) => {
+        console.log('✅ Received from Message table:', payload)
+        document.getElementById('messages').innerHTML += '<p>✅ Message table: ' + JSON.stringify(payload) + '</p>'
+      })
+      .subscribe((status) => {
+        console.log('Message table status:', status)
+        document.getElementById('status').innerHTML = 'Message table: ' + status
+      })
+    
+    // Test với message (chữ thường)
+    setTimeout(() => {
+      console.log('Testing table name: message')
+      const channel2 = client
+        .channel('test-message')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'message'
+        }, (payload) => {
+          console.log('✅ Received from message table:', payload)
+          document.getElementById('messages').innerHTML += '<p>✅ message table: ' + JSON.stringify(payload) + '</p>'
+        })
+        .subscribe((status) => {
+          console.log('message table status:', status)
+          document.getElementById('status').innerHTML += '<br>message table: ' + status
+        })
+    }, 2000)
+  </script>
+</body>
+</html>

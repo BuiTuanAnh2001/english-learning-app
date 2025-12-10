@@ -4,9 +4,6 @@
 export function Navbar() {
   return null
 }
-  const [mounted, setMounted] = React.useState(false)
-  const [showLoginModal, setShowLoginModal] = React.useState(false)
-  const [showUserMenu, setShowUserMenu] = React.useState(false)
   const [scrolled, setScrolled] = React.useState(false)
   const [unreadNotifications, setUnreadNotifications] = React.useState(0)
   const [unreadMessages, setUnreadMessages] = React.useState(0)

@@ -103,7 +103,7 @@ export default function ChatPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [session?.user?.id, selectedConv])
+  }, [session?.user?.id, selectedConv, fetchConversations])
 
   useEffect(() => {
     if (status === 'unauthenticated') {

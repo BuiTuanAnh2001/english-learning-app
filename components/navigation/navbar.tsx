@@ -1,27 +1,10 @@
 'use client'
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { createBrowserClient } from '@/lib/supabase'
-import { Menu, X, Sun, Moon, Shield, LogOut, User, ChevronDown, BookOpen, TrendingUp, Sparkles, Home, GraduationCap, BarChart3, BookMarked, Bell, MessageCircle, Users } from "lucide-react"
-import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { useAuth } from "@/lib/contexts/auth-context"
-import { LoginModal } from "@/components/auth/login-modal"
-
-const navItems = [
-  { name: "Trang chủ", href: "/", icon: Home },
-  { name: "Bài học", href: "/lessons", icon: GraduationCap },
-  { name: "Sổ từ vựng", href: "/notebook", icon: BookMarked },
-  { name: "Bạn bè", href: "/friends", icon: Users },
-  { name: "Tin nhắn", href: "/messages", icon: MessageCircle },
-  { name: "Tiến độ", href: "/progress", icon: BarChart3 },
-]
-
+// Navbar component removed - using chat page directly
 export function Navbar() {
+  return null
+}
+
   const [isOpen, setIsOpen] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
   const [showLoginModal, setShowLoginModal] = React.useState(false)

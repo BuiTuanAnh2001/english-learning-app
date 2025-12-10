@@ -147,52 +147,14 @@ export default function ChatPage() {
     const tempMessage = messageInput
     setMessageInput('')
 
-    // Optimistic update - hiển thị tin nhắn ngay lập tức
-    const optimisticMessage: Message = {
-      id: 'temp-' + Date.now(),
-      content: tempMessage,
-      senderId: session?.user?.id || '',
-      conversationId: selectedConv,
-      createdAt: new Date().toISOString(),
-      sender: {
-        id: session?.user?.id || '',
-        name: session?.user?.name || null,
-        email: session?.user?.email || '',
-        avatar: session?.user?.image || null,
-      }
-    }
-    
-    setMessages(prev => [...prev, optimisticMessage])
-    scrollToBottom()
-
     try {
-      console.log('Sending message:', tempMessage, 'to conversation:', selectedConv)
-      
-      const res = await fetch(`/api/conversations/${selectedConv}/messages`, {
+      await fetch(`/api/conversations/${selectedConv}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: tempMessage })
       })
-      
-      const data = await res.json()
-      console.log('Send response:', data)
-      
-      if (!res.ok) {
-        console.error('Failed to send:', data)
-        // Remove optimistic message on error
-        setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id))
-        setMessageInput(tempMessage)
-        alert('Không thể gửi tin nhắn: ' + (data.error || 'Lỗi không xác định'))
-      } else {
-        // Replace optimistic message with real one
-        fetchMessages(selectedConv)
-      }
     } catch (error) {
-      console.error('Error sending message:', error)
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id))
       setMessageInput(tempMessage)
-      alert('Đã xảy ra lỗi khi gửi tin nhắn')
     }
   }
 
@@ -231,17 +193,17 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#F2F2F7]">
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-black">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen flex bg-[#F2F2F7]">
+    <div className="h-screen flex bg-white dark:bg-black">
       {/* Sidebar */}
-      <div className="w-80 border-r border-gray-200 flex flex-col bg-white">
-        <div className="p-4 border-b border-gray-200">
+      <div className="w-80 border-r border-gray-200 dark:border-gray-800 flex flex-col bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-2xl font-semibold">Messages</h1>
             <div className="flex gap-2">
@@ -255,7 +217,7 @@ export default function ChatPage() {
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search" className="pl-9 bg-gray-100 border-0 rounded-lg h-9 text-gray-900" />
+            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search" className="pl-9 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg h-9" />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -263,7 +225,7 @@ export default function ChatPage() {
             const other = conv.members.find(m => m.user.id !== session?.user?.id)?.user
             const lastMessage = conv.messages[conv.messages.length - 1]
             return (
-              <button key={conv.id} onClick={() => setSelectedConv(conv.id)} className={cn("w-full p-3 flex items-center gap-3 hover:bg-gray-50 border-b border-gray-100", conv.id === selectedConv && "bg-gray-100")}>
+              <button key={conv.id} onClick={() => setSelectedConv(conv.id)} className={cn("w-full p-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800/50", conv.id === selectedConv && "bg-gray-100 dark:bg-gray-800/50")}>
                 <div className="relative">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={other?.avatar || undefined} />
@@ -288,7 +250,7 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col">
         {selectedConversation ? (
           <>
-            <div className="h-14 border-b border-gray-200 flex items-center justify-center px-4 bg-white">
+            <div className="h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center px-4">
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={otherUser?.avatar || undefined} />
@@ -298,7 +260,7 @@ export default function ChatPage() {
               </div>
               <Button size="sm" variant="ghost" className="absolute right-4 h-8 w-8 p-0"><Info className="h-4 w-4" /></Button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-white">
+            <div className="flex-1 overflow-y-auto p-4">
               <div className="max-w-3xl mx-auto space-y-0.5">
                 {messages.map((msg, i) => {
                   const isOwn = msg.senderId === session?.user?.id
@@ -308,7 +270,7 @@ export default function ChatPage() {
                   const isLastInGroup = !nextMsg || nextMsg.senderId !== msg.senderId
                   return (
                     <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={cn("flex", isOwn ? "justify-end" : "justify-start", !isFirstInGroup && "mt-0.5", isLastInGroup && "mb-3")}>
-                      <div className={cn("max-w-[70%] px-4 py-2 shadow-sm", isOwn ? "bg-[#007AFF] text-white rounded-[18px]" : "bg-[#E5E5EA] text-gray-900 rounded-[18px]", isOwn && isFirstInGroup && "rounded-tr-sm", isOwn && isLastInGroup && "rounded-br-sm", !isOwn && isFirstInGroup && "rounded-tl-sm", !isOwn && isLastInGroup && "rounded-bl-sm")}>
+                      <div className={cn("max-w-[70%] px-4 py-2 shadow-sm", isOwn ? "bg-blue-500 text-white rounded-[18px]" : "bg-gray-200 dark:bg-gray-800 rounded-[18px]", isOwn && isFirstInGroup && "rounded-tr-sm", isOwn && isLastInGroup && "rounded-br-sm", !isOwn && isFirstInGroup && "rounded-tl-sm", !isOwn && isLastInGroup && "rounded-bl-sm")}>
                         <p className="text-[15px] leading-snug break-words">{msg.content}</p>
                       </div>
                     </motion.div>
@@ -317,11 +279,11 @@ export default function ChatPage() {
                 <div ref={messagesEndRef} />
               </div>
             </div>
-            <div className="border-t border-gray-200 p-4 bg-white">
+            <div className="border-t border-gray-200 dark:border-gray-800 p-4">
               <form onSubmit={sendMessage} className="max-w-3xl mx-auto flex items-center gap-2">
                 <Button type="button" size="sm" variant="ghost" className="h-9 w-9 p-0"><ImageIcon className="h-5 w-5 text-gray-500" /></Button>
-                <Input value={messageInput} onChange={(e) => setMessageInput(e.target.value)} placeholder="iMessage" className="flex-1 bg-gray-100 border-0 rounded-full h-9 px-4 text-gray-900" />
-                <motion.button type="submit" disabled={!messageInput.trim()} className={cn("h-9 w-9 rounded-full flex items-center justify-center", messageInput.trim() ? "bg-[#007AFF] hover:bg-[#0051D5]" : "bg-gray-300")} whileTap={messageInput.trim() ? { scale: 0.9 } : {}}>
+                <Input value={messageInput} onChange={(e) => setMessageInput(e.target.value)} placeholder="iMessage" className="flex-1 bg-gray-100 dark:bg-gray-800 border-0 rounded-full h-9 px-4" />
+                <motion.button type="submit" disabled={!messageInput.trim()} className={cn("h-9 w-9 rounded-full flex items-center justify-center", messageInput.trim() ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 dark:bg-gray-700")} whileTap={messageInput.trim() ? { scale: 0.9 } : {}}>
                   <Send className="h-4 w-4 text-white" />
                 </motion.button>
               </form>
@@ -330,7 +292,7 @@ export default function ChatPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4"><Plus className="h-8 w-8 text-gray-400" /></div>
+              <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4"><Plus className="h-8 w-8 text-gray-400" /></div>
               <p className="text-gray-500 text-sm">Chọn cuộc trò chuyện</p>
             </div>
           </div>
@@ -342,12 +304,12 @@ export default function ChatPage() {
         {showNewChatDialog && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/30 z-40" onClick={() => setShowNewChatDialog(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 bg-white rounded-2xl shadow-2xl z-50 p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl z-50 p-6">
               <h3 className="text-lg font-semibold mb-4">New Message</h3>
               <Input value={newChatEmail} onChange={(e) => setNewChatEmail(e.target.value)} placeholder="Email" className="mb-4" autoFocus />
               <div className="flex gap-2">
                 <Button onClick={() => setShowNewChatDialog(false)} variant="outline" className="flex-1">Cancel</Button>
-                <Button onClick={createNewChat} className="flex-1 bg-[#007AFF] hover:bg-[#0051D5] text-white" disabled={!newChatEmail.trim()}>Create</Button>
+                <Button onClick={createNewChat} className="flex-1 bg-blue-500 hover:bg-blue-600" disabled={!newChatEmail.trim()}>Create</Button>
               </div>
             </motion.div>
           </>

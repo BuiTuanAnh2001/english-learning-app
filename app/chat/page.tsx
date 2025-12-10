@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -59,16 +59,7 @@ export default function ChatPage() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-    } else if (status === 'authenticated') {
-      fetchConversations()
-      subscribeToRealtime()
-    }
-  }, [status])
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch('/api/conversations')
       const data = await res.json()
@@ -83,13 +74,15 @@ export default function ChatPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedConv])
 
-  const subscribeToRealtime = () => {
+  const subscribeToRealtime = useCallback(() => {
+    if (!session?.user?.id) return
+
     const supabase = createBrowserClient()
     
     const channel = supabase
-      .channel('chat-messages')
+      .channel('conversations-messages')
       .on(
         'postgres_changes',
         {
@@ -97,7 +90,7 @@ export default function ChatPage() {
           schema: 'public',
           table: 'Message'
         },
-        (payload) => {
+        (payload: any) => {
           console.log('New message:', payload)
           if (payload.new.conversationId === selectedConv && selectedConv) {
             fetchMessages(selectedConv)
@@ -110,7 +103,17 @@ export default function ChatPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }
+  }, [session?.user?.id, selectedConv])
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated') {
+      fetchConversations()
+      const cleanup = subscribeToRealtime()
+      return cleanup
+    }
+  }, [status, router, fetchConversations, subscribeToRealtime])
 
   const fetchMessages = async (convId: string) => {
     try {

@@ -4,8 +4,6 @@
 export function Navbar() {
   return null
 }
-
-  const [isOpen, setIsOpen] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const [showUserMenu, setShowUserMenu] = React.useState(false)

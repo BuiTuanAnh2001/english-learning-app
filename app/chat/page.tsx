@@ -104,11 +104,19 @@ export default function ChatPage() {
     
     console.log('🔌 Setting up realtime for conversation:', selectedConv)
     console.log('🔌 Testing BOTH table names: "Message" and "message"')
+    console.log('🔌 Filter: conversationId =', selectedConv)
     
     // Handler function để xử lý realtime message
     const handleMessage = (payload: any, tableName: string) => {
+      console.log(`📨 [${tableName}] ========== NEW EVENT ==========`)
       console.log(`📨 [${tableName}] Event type: ${payload.eventType}`)
-      console.log(`📨 [${tableName}] Payload:`, payload)
+      console.log(`📨 [${tableName}] Full payload:`, JSON.stringify(payload, null, 2))
+      
+      // Check if this message belongs to current conversation
+      const msgConvId = payload.new?.conversationId
+      console.log(`📨 [${tableName}] Message conversationId: ${msgConvId}`)
+      console.log(`📨 [${tableName}] Current conversationId: ${selectedConv}`)
+      console.log(`📨 [${tableName}] Match: ${msgConvId === selectedConv}`)
       
       if (payload.eventType === 'INSERT') {
         const newMessage = payload.new
@@ -146,18 +154,19 @@ export default function ChatPage() {
     const channel = supabase
       .channel(`conversation-${selectedConv}`)
       // Test với Message (uppercase - theo Prisma schema)
+      // BỎ FILTER ĐỂ TEST - sẽ nhận TẤT CẢ messages
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'Message',
-        filter: `conversationId=eq.${selectedConv}`
+        table: 'Message'
+        // KHÔNG DÙNG FILTER để test
       }, (payload: any) => handleMessage(payload, 'Message'))
       // Test với message (lowercase - PostgreSQL thường tự lowercase)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'message',
-        filter: `conversationId=eq.${selectedConv}`
+        table: 'message'
+        // KHÔNG DÙNG FILTER để test
       }, (payload: any) => handleMessage(payload, 'message'))
       .subscribe((status) => {
         console.log('🔌 Realtime connection status:', status)

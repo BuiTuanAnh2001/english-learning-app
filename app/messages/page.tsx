@@ -281,31 +281,31 @@ function MessagesContent() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-20">
-      <div className="container mx-auto px-4 max-w-7xl h-[calc(100vh-5rem)]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full py-4">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 pt-16 md:pt-20">
+      <div className="container mx-auto px-2 md:px-4 max-w-7xl h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 h-full py-2 md:py-4">
           {/* Conversations List */}
-          <Card className={`md:col-span-1 flex flex-col overflow-hidden ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-            <div className="p-4 border-b shrink-0">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <MessageCircle className="w-6 h-6 text-blue-600" />
+          <Card className={`md:col-span-1 flex flex-col overflow-hidden shadow-lg ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+            <div className="p-3 md:p-4 border-b shrink-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+              <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                 Tin nhắn
               </h2>
             </div>
             
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
               {loading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                 </div>
               ) : conversations.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <MessageCircle className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-                  <p className="text-slate-600 dark:text-slate-400">
+                <div className="text-center py-8 md:py-12 px-4">
+                  <MessageCircle className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 text-slate-400" />
+                  <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mb-3 md:mb-4">
                     Chưa có cuộc trò chuyện nào
                   </p>
                   <Button
-                    className="mt-4"
+                    className="text-sm"
                     onClick={() => router.push('/friends?tab=add')}
                   >
                     Thêm bạn bè
@@ -313,68 +313,74 @@ function MessagesContent() {
                 </div>
               ) : (
                 conversations.map((conv) => (
-                  <div
+                  <motion.div
                     key={conv.partner.id}
                     onClick={() => setSelectedUser(conv.partner)}
-                    className={`p-4 border-b cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
-                      selectedUser?.id === conv.partner.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className={`p-3 md:p-4 border-b cursor-pointer transition-all ${
+                      selectedUser?.id === conv.partner.id 
+                        ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-l-blue-500' 
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">
-                        {(conv.partner.name || conv.partner.email)[0].toUpperCase()}
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="relative">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0 shadow-md">
+                          {(conv.partner.name || conv.partner.email)[0].toUpperCase()}
+                        </div>
+                        {conv.unreadCount > 0 && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg animate-pulse">
+                            {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold truncate">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="font-semibold text-sm md:text-base truncate">
                             {conv.partner.name || conv.partner.email}
                           </h3>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-slate-500 shrink-0 ml-2">
                             {formatTime(conv.lastMessage.createdAt)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
-                            {conv.lastMessage.senderId === user?.id ? 'Bạn: ' : ''}
-                            {conv.lastMessage.content}
-                          </p>
-                          {conv.unreadCount > 0 && (
-                            <span className="ml-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shrink-0">
-                              {conv.unreadCount}
-                            </span>
+                        <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 truncate">
+                          {conv.lastMessage.senderId === user?.id && (
+                            <span className="text-blue-600 dark:text-blue-400">Bạn: </span>
                           )}
-                        </div>
+                          {conv.lastMessage.content}
+                        </p>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))
               )}
             </div>
           </Card>
 
           {/* Chat Area */}
-          <Card className={`md:col-span-2 flex flex-col overflow-hidden ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
+          <Card className={`md:col-span-2 flex flex-col overflow-hidden shadow-lg ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
             {selectedUser ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-3">
+                <div className="p-3 md:p-4 border-b flex items-center justify-between shrink-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+                  <div className="flex items-center gap-2 md:gap-3">
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="md:hidden"
+                      className="md:hidden -ml-2"
                       onClick={() => setSelectedUser(null)}
                     >
                       <ArrowLeft className="w-5 h-5" />
                     </Button>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold shadow-md">
                       {(selectedUser.name || selectedUser.email)[0].toUpperCase()}
                     </div>
-                    <div>
-                      <h3 className="font-semibold">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-sm md:text-base truncate">
                         {selectedUser.name || selectedUser.email}
                       </h3>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 truncate">
                         {selectedUser.email}
                       </p>
                     </div>
@@ -382,7 +388,13 @@ function MessagesContent() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                <div 
+                  className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600"
+                  style={{ 
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgb(203 213 225 / 0.15) 1px, transparent 0)',
+                    backgroundSize: '24px 24px'
+                  }}
+                >
                   <AnimatePresence>
                     {messages.map((message) => {
                       const isOwn = message.senderId === user?.id
@@ -391,25 +403,28 @@ function MessagesContent() {
                           key={message.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
                           className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                          <div className={`max-w-[85%] md:max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                             <div
-                              className={`px-4 py-2 rounded-2xl ${
+                              className={`px-3 md:px-4 py-2 md:py-2.5 rounded-2xl shadow-sm ${
                                 isOwn
-                                  ? 'bg-blue-600 text-white rounded-br-sm'
-                                  : 'bg-slate-200 dark:bg-slate-700 rounded-bl-sm'
+                                  ? 'bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-br-sm'
+                                  : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-bl-sm border border-slate-200 dark:border-slate-600'
                               }`}
                             >
-                              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                              <p className="text-sm md:text-base whitespace-pre-wrap break-words leading-relaxed">
+                                {message.content}
+                              </p>
                             </div>
                             <div className="flex items-center gap-1 px-2">
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
                                 {formatTime(message.createdAt)}
                               </span>
                               {isOwn && (
                                 message.read ? (
-                                  <CheckCheck className="w-3 h-3 text-blue-600" />
+                                  <CheckCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                                 ) : (
                                   <Check className="w-3 h-3 text-slate-400" />
                                 )
@@ -424,7 +439,7 @@ function MessagesContent() {
                 </div>
 
                 {/* Input */}
-                <div className="p-4 border-t shrink-0">
+                <div className="p-3 md:p-4 border-t shrink-0 bg-white dark:bg-slate-800/50">
                   <div className="flex gap-2">
                     <Textarea
                       value={newMessage}
@@ -436,31 +451,32 @@ function MessagesContent() {
                         }
                       }}
                       placeholder="Nhập tin nhắn..."
-                      className="resize-none"
-                      rows={2}
+                      className="resize-none text-sm md:text-base min-h-[40px] md:min-h-[48px]"
+                      rows={1}
                     />
                     <Button
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || sending}
-                      className="shrink-0"
+                      className="shrink-0 h-10 w-10 md:h-12 md:w-12 p-0 flex items-center justify-center"
+                      size="sm"
                     >
                       {sending ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
                       ) : (
-                        <Send className="w-5 h-5" />
+                        <Send className="w-4 h-4 md:w-5 md:h-5" />
                       )}
                     </Button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-center p-8">
+              <div className="flex-1 flex items-center justify-center text-center p-6 md:p-8">
                 <div>
-                  <MessageCircle className="w-20 h-20 mx-auto mb-4 text-slate-400" />
-                  <h3 className="text-xl font-semibold mb-2">
+                  <MessageCircle className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 md:mb-4 text-slate-400" />
+                  <h3 className="text-lg md:text-xl font-semibold mb-2">
                     Chọn một cuộc trò chuyện
                   </h3>
-                  <p className="text-slate-600 dark:text-slate-400">
+                  <p className="text-sm md:text-base text-slate-600 dark:text-slate-400">
                     Chọn một người bạn từ danh sách bên trái để bắt đầu trò chuyện
                   </p>
                 </div>

@@ -1,17 +1,10 @@
 'use client'
 
-// Navbar component removed - using chat page directly
+// Navbar component removed - chat app uses integrated navigation
 export function Navbar() {
   return null
 }
-  const [scrolled, setScrolled] = React.useState(false)
-  const [unreadNotifications, setUnreadNotifications] = React.useState(0)
-  const [unreadMessages, setUnreadMessages] = React.useState(0)
-  const { theme, setTheme } = useTheme()
-  const { isAuthenticated, isAdmin, logout, user } = useAuth()
-  const pathname = usePathname()
-  const router = useRouter()
-  const userMenuRef = React.useRef<HTMLDivElement>(null)
+
 
   React.useEffect(() => {
     setMounted(true)

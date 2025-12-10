@@ -103,16 +103,14 @@ export default function ChatPage() {
     }
     
     console.log('🔌 Setting up realtime for conversation:', selectedConv)
+    console.log('🔌 Testing BOTH table names: "Message" and "message"')
     
-    const channel = supabase
-      .channel(`conversation-${selectedConv}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'message',
-        filter: `conversationId=eq.${selectedConv}`
-      }, (payload: any) => {
-        console.log('📨 NEW MESSAGE FROM REALTIME:', payload)
+    // Handler function để xử lý realtime message
+    const handleMessage = (payload: any, tableName: string) => {
+      console.log(`📨 [${tableName}] Event type: ${payload.eventType}`)
+      console.log(`📨 [${tableName}] Payload:`, payload)
+      
+      if (payload.eventType === 'INSERT') {
         const newMessage = payload.new
         
         // Thay thế optimistic message bằng message thật từ DB
@@ -122,8 +120,12 @@ export default function ChatPage() {
           
           // Kiểm tra xem message đã tồn tại chưa (tránh duplicate)
           const exists = filtered.some(m => m.id === newMessage.id)
-          if (exists) return filtered
+          if (exists) {
+            console.log('⚠️ Message already exists, skipping')
+            return filtered
+          }
           
+          console.log('✅ Adding new message from realtime')
           // Fetch lại để có đầy đủ sender info
           fetchMessages(selectedConv)
           return filtered
@@ -131,32 +133,44 @@ export default function ChatPage() {
         
         // Refresh conversation list để update last message
         fetchConversations()
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'message',
-        filter: `conversationId=eq.${selectedConv}`
-      }, (payload: any) => {
-        console.log('✏️ MESSAGE UPDATED:', payload)
+      } else if (payload.eventType === 'UPDATE') {
+        console.log('✏️ Message updated, refreshing...')
         fetchMessages(selectedConv)
-      })
+      } else if (payload.eventType === 'DELETE') {
+        console.log('🗑️ Message deleted')
+        setMessages(prev => prev.filter(m => m.id !== payload.old.id))
+      }
+    }
+    
+    // Thử CẢ 2 table names vì không chắc PostgreSQL dùng cái nào
+    const channel = supabase
+      .channel(`conversation-${selectedConv}`)
+      // Test với Message (uppercase - theo Prisma schema)
       .on('postgres_changes', {
-        event: 'DELETE',
+        event: '*',
+        schema: 'public',
+        table: 'Message',
+        filter: `conversationId=eq.${selectedConv}`
+      }, (payload: any) => handleMessage(payload, 'Message'))
+      // Test với message (lowercase - PostgreSQL thường tự lowercase)
+      .on('postgres_changes', {
+        event: '*',
         schema: 'public',
         table: 'message',
         filter: `conversationId=eq.${selectedConv}`
-      }, (payload: any) => {
-        console.log('🗑️ MESSAGE DELETED:', payload)
-        setMessages(prev => prev.filter(m => m.id !== payload.old.id))
-      })
+      }, (payload: any) => handleMessage(payload, 'message'))
       .subscribe((status) => {
-        console.log('🔌 Realtime status:', status)
+        console.log('🔌 Realtime connection status:', status)
         if (status === 'SUBSCRIBED') {
           console.log('✅ Successfully subscribed to realtime!')
-          console.log('📡 Listening for INSERT/UPDATE/DELETE on message table')
+          console.log('📡 Listening on BOTH "Message" AND "message" tables')
+          console.log('📡 Monitoring events: INSERT, UPDATE, DELETE')
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Realtime channel error!')
+          console.error('❌ Possible reasons:')
+          console.error('   1. Realtime not enabled in Supabase Dashboard')
+          console.error('   2. Wrong table name')
+          console.error('   3. Missing RLS policies')
         } else if (status === 'TIMED_OUT') {
           console.error('⏱️ Realtime subscription timed out!')
         }

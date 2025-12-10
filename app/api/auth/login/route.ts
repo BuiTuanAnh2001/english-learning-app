@@ -31,6 +31,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!user.password) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid credentials' },
+        { status: 401 }
+      )
+    }
+
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password)
 
@@ -43,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email },
       JWT_SECRET,
       { expiresIn: '7d' }
     )
@@ -55,7 +62,6 @@ export async function POST(request: NextRequest) {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role
         },
         token
       }

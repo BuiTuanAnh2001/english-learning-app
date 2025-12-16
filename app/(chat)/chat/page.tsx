@@ -284,6 +284,17 @@ export default function ChatPage() {
         console.error("Error marking message as read:", error);
       }
     }
+
+    // Reset unread count for current conversation
+    if (unreadMessages.length > 0) {
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === selectedConversation.id
+            ? { ...conv, unreadCount: 0 }
+            : conv
+        )
+      );
+    }
   }, [selectedConversation?.id, session?.user?.id, messages]);
 
   useEffect(() => {
@@ -810,49 +821,15 @@ export default function ChatPage() {
 
       const messageContent = newMessage;
       const tempId = `temp-${Date.now()}`;
-      setNewMessage(""); // Clear immediately for better UX
+      const currentReply = replyingTo;
+
+      // Clear UI immediately for instant feedback
+      setNewMessage("");
       setShowEmojiPicker(false);
+      setReplyingTo(null);
       setIsSendingMessage(true);
 
-      let imageUrl = null;
-      let imageName = null;
-
-      // Upload image if selected
-      if (selectedImage) {
-        setIsUploading(true);
-        try {
-          const formData = new FormData();
-          formData.append("file", selectedImage);
-
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (uploadRes.ok) {
-            const uploadData = await uploadRes.json();
-            imageUrl = uploadData.data.url;
-            imageName = uploadData.data.fileName;
-          } else {
-            toast.error("Không thể upload ảnh. Vui lòng thử lại!");
-            setNewMessage(messageContent);
-            setIsUploading(false);
-            setIsSendingMessage(false);
-            return;
-          }
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          toast.error("Lỗi khi upload ảnh!");
-          setNewMessage(messageContent);
-          setIsUploading(false);
-          setIsSendingMessage(false);
-          return;
-        }
-        setIsUploading(false);
-        handleRemoveImage();
-      }
-
-      // Optimistic update - add message immediately
+      // Optimistic update - add message immediately (even before image upload)
       const optimisticMessage: Message = {
         id: tempId,
         content: messageContent || "",
@@ -860,15 +837,15 @@ export default function ChatPage() {
         senderName: session?.user?.name || "You",
         senderAvatar: session?.user?.image || undefined,
         createdAt: new Date(),
-        type: imageUrl ? "IMAGE" : "TEXT",
-        fileUrl: imageUrl || undefined,
-        fileName: imageName || undefined,
+        type: selectedImage ? "IMAGE" : "TEXT",
+        fileUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
+        fileName: selectedImage?.name,
         reactions: {},
-        replyTo: replyingTo
+        replyTo: currentReply
           ? {
-              id: replyingTo.id,
-              content: replyingTo.content,
-              senderName: replyingTo.senderName,
+              id: currentReply.id,
+              content: currentReply.content,
+              senderName: currentReply.senderName,
             }
           : undefined,
       };
@@ -888,6 +865,55 @@ export default function ChatPage() {
         )
       );
 
+      let imageUrl: string | null = null;
+      let imageName: string | null = null;
+
+      // Upload image if selected (in background)
+      if (selectedImage) {
+        setIsUploading(true);
+        try {
+          const formData = new FormData();
+          formData.append("file", selectedImage);
+
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            imageUrl = uploadData.data.url;
+            imageName = uploadData.data.fileName;
+
+            // Update optimistic message with real image URL
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === tempId
+                  ? { ...msg, fileUrl: imageUrl ?? undefined, fileName: imageName ?? undefined }
+                  : msg
+              )
+            );
+          } else {
+            toast.error("Không thể upload ảnh. Vui lòng thử lại!");
+            setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+            setNewMessage(messageContent);
+            setIsUploading(false);
+            setIsSendingMessage(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          toast.error("Lỗi khi upload ảnh!");
+          setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+          setNewMessage(messageContent);
+          setIsUploading(false);
+          setIsSendingMessage(false);
+          return;
+        }
+        setIsUploading(false);
+        handleRemoveImage();
+      }
+
       try {
         const res = await fetch(
           `/api/conversations/${selectedConversation.id}/messages`,
@@ -899,7 +925,7 @@ export default function ChatPage() {
               type: imageUrl ? "IMAGE" : "TEXT",
               fileUrl: imageUrl,
               fileName: imageName,
-              replyToId: replyingTo?.id,
+              replyToId: currentReply?.id,
             }),
           }
         );
@@ -907,9 +933,6 @@ export default function ChatPage() {
         if (res.ok) {
           const response = await res.json();
           const messageData = response.success ? response.data : response;
-
-          // Clear reply after sending
-          setReplyingTo(null);
 
           // Replace temporary message with real one
           setMessages((prev) =>
@@ -944,6 +967,7 @@ export default function ChatPage() {
           setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
           toast.error("Không thể gửi tin nhắn");
           setNewMessage(messageContent);
+          if (currentReply) setReplyingTo(currentReply);
         }
       } catch (error) {
         console.error("Error sending message:", error);
@@ -951,6 +975,7 @@ export default function ChatPage() {
         setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
         toast.error("Không thể gửi tin nhắn");
         setNewMessage(messageContent);
+        if (currentReply) setReplyingTo(currentReply);
       } finally {
         setIsSendingMessage(false);
       }
@@ -960,10 +985,12 @@ export default function ChatPage() {
       selectedImage,
       selectedConversation,
       isSendingMessage,
+      replyingTo,
       session?.user?.id,
       session?.user?.name,
       session?.user?.image,
       handleRemoveImage,
+      broadcastTyping,
     ]
   );
 

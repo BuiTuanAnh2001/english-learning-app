@@ -22,6 +22,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   Archive,
+  Check,
+  CheckCheck,
   FileText,
   Image as ImageIcon,
   LogOut,
@@ -74,6 +76,7 @@ interface Message {
     content: string;
     senderName: string;
   };
+  readReceipts?: { userId: string; readAt: Date }[];
 }
 
 interface User {
@@ -115,6 +118,7 @@ export default function ChatPage() {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
   const reactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -202,6 +206,7 @@ export default function ChatPage() {
                   senderName: msg.replyTo.sender?.name || "Unknown",
                 }
               : undefined,
+            readReceipts: msg.readReceipts || [],
           };
         });
 
@@ -257,6 +262,29 @@ export default function ChatPage() {
       broadcastTyping(false);
     }, 3000);
   }, [broadcastTyping]);
+
+  // Mark messages as read
+  const markMessagesAsRead = useCallback(async () => {
+    if (!selectedConversation?.id || !session?.user?.id) return;
+
+    // Find unread messages (messages from others that don't have our read receipt)
+    const unreadMessages = messages.filter(
+      (msg) =>
+        msg.senderId !== session.user.id &&
+        !msg.readReceipts?.some((r) => r.userId === session.user.id)
+    );
+
+    // Mark each unread message as read
+    for (const message of unreadMessages) {
+      try {
+        await fetch(`/api/messages/${message.id}/read`, {
+          method: "POST",
+        });
+      } catch (error) {
+        console.error("Error marking message as read:", error);
+      }
+    }
+  }, [selectedConversation?.id, session?.user?.id, messages]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -326,6 +354,13 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Mark messages as read when viewing them
+  useEffect(() => {
+    if (messages.length > 0 && !document.hidden) {
+      markMessagesAsRead();
+    }
+  }, [messages, markMessagesAsRead]);
 
   // Realtime subscription for conversation list updates
   useEffect(() => {
@@ -556,6 +591,30 @@ export default function ChatPage() {
             };
           });
         }
+      })
+      .on("broadcast", { event: "message_read" }, (payload) => {
+        const { messageId, userId, readAt } = payload.payload;
+        console.log("👁️ Message read:", payload);
+
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId) {
+              const readReceipts = msg.readReceipts || [];
+              // Check if already marked as read by this user
+              if (readReceipts.some((r) => r.userId === userId)) {
+                return msg;
+              }
+              return {
+                ...msg,
+                readReceipts: [
+                  ...readReceipts,
+                  { userId, readAt: new Date(readAt) },
+                ],
+              };
+            }
+            return msg;
+          })
+        );
       })
       .subscribe((status) => {
         console.log("📡 Subscription status:", status);
@@ -1332,7 +1391,10 @@ export default function ChatPage() {
                             >
                               {/* Reply button */}
                               <button
-                                onClick={() => setReplyingTo(message)}
+                                onClick={() => {
+                                  setReplyingTo(message);
+                                  messageInputRef.current?.focus();
+                                }}
                                 className="bg-slate-700 hover:bg-slate-600 rounded-full p-1"
                                 title="Trả lời"
                               >
@@ -1406,11 +1468,27 @@ export default function ChatPage() {
                               )}
                           </div>
 
-                          <span className="text-[10px] text-slate-500 px-1">
-                            {message.createdAt
-                              ? format(new Date(message.createdAt), "HH:mm")
-                              : ""}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-slate-500 px-1">
+                              {message.createdAt
+                                ? format(new Date(message.createdAt), "HH:mm")
+                                : ""}
+                            </span>
+                            {isOwn &&
+                              message.readReceipts &&
+                              message.readReceipts.length > 0 && (
+                                <div className="text-cyan-400" title="Đã xem">
+                                  <CheckCheck className="w-3 h-3" />
+                                </div>
+                              )}
+                            {isOwn &&
+                              (!message.readReceipts ||
+                                message.readReceipts.length === 0) && (
+                                <div className="text-slate-500" title="Đã gửi">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                              )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1489,6 +1567,7 @@ export default function ChatPage() {
 
                 <div className="flex-1 relative">
                   <Input
+                    ref={messageInputRef}
                     placeholder={
                       isUploading ? "Đang upload ảnh..." : "Nhập tin nhắn..."
                     }

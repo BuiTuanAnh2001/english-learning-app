@@ -160,18 +160,36 @@ export default function ChatPage() {
         const messagesData = response.success ? response.data : [];
 
         // Transform messages to match our interface
-        const transformedMessages = (messagesData || []).map((msg: any) => ({
-          id: msg.id,
-          content: msg.content,
-          senderId: msg.senderId,
-          senderName: msg.sender?.name || "Unknown",
-          senderAvatar: msg.sender?.avatar,
-          createdAt: msg.createdAt,
-          type: msg.type || "TEXT",
-          fileUrl: msg.fileUrl,
-          fileName: msg.fileName,
-          reactions: msg.reactions || {},
-        }));
+        const transformedMessages = (messagesData || []).map((msg: any) => {
+          // Transform reactions from array to object format
+          const reactionsObj: {
+            [emoji: string]: { userId: string; userName: string }[];
+          } = {};
+          if (msg.reactions && Array.isArray(msg.reactions)) {
+            msg.reactions.forEach((reaction: any) => {
+              if (!reactionsObj[reaction.emoji]) {
+                reactionsObj[reaction.emoji] = [];
+              }
+              reactionsObj[reaction.emoji].push({
+                userId: reaction.userId,
+                userName: reaction.user?.name || "Unknown",
+              });
+            });
+          }
+
+          return {
+            id: msg.id,
+            content: msg.content,
+            senderId: msg.senderId,
+            senderName: msg.sender?.name || "Unknown",
+            senderAvatar: msg.sender?.avatar,
+            createdAt: msg.createdAt,
+            type: msg.type || "TEXT",
+            fileUrl: msg.fileUrl,
+            fileName: msg.fileName,
+            reactions: reactionsObj,
+          };
+        });
 
         setMessages(transformedMessages);
       }

@@ -50,6 +50,17 @@ export async function GET(
             userId: true,
             readAt: true
           }
+        },
+        reactions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true
+              }
+            }
+          }
         }
       },
       orderBy: {

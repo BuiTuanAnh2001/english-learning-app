@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createClient } from '@supabase/supabase-js'
+import { getServerSession } from 'next-auth'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
@@ -132,6 +133,41 @@ export async function POST(
       where: { id: params.id },
       data: { updatedAt: new Date() }
     })
+
+    // Broadcast realtime event via Supabase
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || `https://vehatkcukaloprvqcejz.supabase.co`;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Broadcast to channel - this will trigger postgres_changes listener
+        const channel = supabase.channel(`conversation:${params.id}`);
+        
+        await channel.send({
+          type: 'broadcast',
+          event: 'new_message',
+          payload: {
+            id: message.id,
+            conversationId: params.id,
+            senderId: message.senderId,
+            senderName: message.sender?.name,
+            senderAvatar: message.sender?.avatar,
+            content: message.content,
+            type: message.type,
+            createdAt: message.createdAt,
+            fileUrl: message.fileUrl,
+            fileName: message.fileName,
+          }
+        });
+        
+        console.log('✅ Realtime event broadcasted for message:', message.id);
+      }
+    } catch (broadcastError) {
+      console.error('⚠️ Failed to broadcast realtime event:', broadcastError);
+      // Don't fail the request if broadcast fails
+    }
 
     return NextResponse.json({ success: true, data: message })
   } catch (error) {

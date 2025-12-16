@@ -1,9 +1,9 @@
-import { NextAuthOptions } from 'next-auth'
-import GoogleProvider from 'next-auth/providers/google'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
+import { NextAuthOptions } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -60,7 +60,7 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   pages: {
-    signIn: '/auth/signin',
+    signIn: '/login',
   },
   callbacks: {
     async jwt({ token, user, account }) {
@@ -69,15 +69,20 @@ export const authOptions: NextAuthOptions = {
         token.avatar = user.avatar
       }
       
-      // Update user status to ONLINE on login
+      // Update user status to ONLINE on login (non-blocking)
       if (account && user) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { 
-            status: 'ONLINE',
-            lastSeen: new Date()
-          },
-        })
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { 
+              status: 'ONLINE',
+              lastSeen: new Date()
+            },
+          }).catch(err => console.error('Failed to update user status:', err))
+        } catch (error) {
+          // Ignore error to not block login
+          console.error('Failed to update user status:', error)
+        }
       }
       
       return token
@@ -89,18 +94,29 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
+    async redirect({ url, baseUrl }) {
+      // Always redirect to /chat after successful login
+      if (url.includes('/api/auth/callback')) {
+        return `${baseUrl}/chat`
+      }
+      return url.startsWith(baseUrl) ? url : baseUrl
+    },
   },
   events: {
     async signOut({ token }) {
-      // Update user status to OFFLINE on logout
+      // Update user status to OFFLINE on logout (non-blocking)
       if (token?.id) {
-        await prisma.user.update({
-          where: { id: token.id as string },
-          data: { 
-            status: 'OFFLINE',
-            lastSeen: new Date()
-          },
-        })
+        try {
+          await prisma.user.update({
+            where: { id: token.id as string },
+            data: { 
+              status: 'OFFLINE',
+              lastSeen: new Date()
+            },
+          }).catch(err => console.error('Failed to update user status on signout:', err))
+        } catch (error) {
+          console.error('Failed to update user status on signout:', error)
+        }
       }
     },
   },

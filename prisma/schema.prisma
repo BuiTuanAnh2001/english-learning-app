@@ -8,31 +8,42 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
+  id            String     @id @default(cuid())
+  email         String     @unique
   emailVerified DateTime?
   name          String?
+  username      String?    @unique
   avatar        String?
-  image         String?        // NextAuth compatibility
-  provider      String?        // google, credentials
+  image         String? // NextAuth compatibility
+  provider      String? // google, apple, credentials
   providerId    String?
-  password      String?        // for email/password auth
+  password      String? // for email/password auth
   bio           String?
-  status        UserStatus     @default(OFFLINE)
-  lastSeen      DateTime       @default(now())
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  
+  phone         String?
+  location      String?
+  status        UserStatus @default(OFFLINE)
+  lastSeen      DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Settings
+  notificationsEnabled Boolean @default(true)
+  darkModeEnabled      Boolean @default(false)
+  onlineStatusVisible  Boolean @default(true)
+
   // Relations
-  sentMessages      Message[]           @relation("SentMessages")
+  sentMessages        Message[]            @relation("SentMessages")
   conversationMembers ConversationMember[]
-  typingStatus      TypingStatus[]
-  
+  typingStatus        TypingStatus[]
+  reactions           MessageReaction[]    @relation("UserReactions")
+  pushSubscription    PushSubscription?
+
   // NextAuth relations
-  accounts          Account[]
-  sessions          Session[]
+  accounts Account[]
+  sessions Session[]
 
   @@index([email])
+  @@index([username])
 }
 
 // NextAuth models
@@ -72,60 +83,76 @@ model VerificationToken {
 }
 
 model Conversation {
-  id          String       @id @default(cuid())
-  name        String?      // For group chats
-  type        ConversationType @default(DIRECT)
-  avatar      String?      // For group chats
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
+  id        String           @id @default(cuid())
+  name      String? // For group chats
+  type      ConversationType @default(DIRECT)
+  avatar    String? // For group chats
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
   // Relations
-  members     ConversationMember[]
-  messages    Message[]
+  members  ConversationMember[]
+  messages Message[]
 }
 
 model ConversationMember {
-  id             String       @id @default(cuid())
+  id             String     @id @default(cuid())
   conversationId String
   userId         String
-  role           MemberRole   @default(MEMBER)
-  joinedAt       DateTime     @default(now())
-  lastReadAt     DateTime     @default(now())
-  
+  role           MemberRole @default(MEMBER)
+  joinedAt       DateTime   @default(now())
+  lastReadAt     DateTime   @default(now())
+
   // Relations
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([conversationId, userId])
   @@index([conversationId])
   @@index([userId])
 }
 
 model Message {
-  id             String       @id @default(cuid())
+  id             String      @id @default(cuid())
   conversationId String
   senderId       String
   content        String
-  type           MessageType  @default(TEXT)
+  type           MessageType @default(TEXT)
   fileUrl        String?
   fileName       String?
   fileSize       Int?
   replyToId      String?
-  edited         Boolean      @default(false)
-  deleted        Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  
+  edited         Boolean     @default(false)
+  deleted        Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
   // Relations
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies        Message[]    @relation("MessageReplies")
-  readReceipts   ReadReceipt[]
-  
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User              @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo      Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      Message[]         @relation("MessageReplies")
+  readReceipts ReadReceipt[]
+  reactions    MessageReaction[]
+
   @@index([conversationId])
   @@index([senderId])
   @@index([createdAt])
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation("UserReactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
 }
 
 model ReadReceipt {
@@ -133,26 +160,41 @@ model ReadReceipt {
   messageId String
   userId    String
   readAt    DateTime @default(now())
-  
+
   // Relations
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
   @@unique([messageId, userId])
   @@index([messageId])
 }
 
 model TypingStatus {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String
   userId         String
-  isTyping       Boolean      @default(true)
-  updatedAt      DateTime     @updatedAt
-  
+  isTyping       Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+
   // Relations
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([conversationId, userId])
   @@index([conversationId])
+}
+
+model PushSubscription {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  endpoint       String    @unique
+  keys           Json
+  expirationTime DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([endpoint])
 }
 
 enum UserStatus {

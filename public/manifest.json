@@ -1,7 +1,7 @@
 {
   "name": "ChatApp - Ứng dụng Chat Hiện Đại",
   "short_name": "ChatApp",
-  "description": "Ứng dụng chat thời gian thực với Google OAuth, chat nhóm, và nhiều tính năng hiện đại",
+  "description": "Ứng dụng chat thời gian thực với Google OAuth, chat nhóm, và push notifications",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -20,7 +20,10 @@
       "type": "image/png"
     }
   ],
-  "categories": ["social", "productivity"],
+  "categories": [
+    "social",
+    "productivity"
+  ],
   "screenshots": [],
   "shortcuts": [
     {
@@ -28,7 +31,17 @@
       "short_name": "Chat",
       "description": "Mở giao diện chat",
       "url": "/chat",
-      "icons": [{ "src": "/icon.svg", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "96x96"
+        }
+      ]
     }
-  ]
+  ],
+  "permissions": [
+    "notifications",
+    "push"
+  ],
+  "gcm_sender_id": "103953800507"
 }

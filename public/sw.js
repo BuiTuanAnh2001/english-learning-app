@@ -15,18 +15,21 @@ self.addEventListener("activate", (event) => {
 
 // Push event - hiển thị notification khi nhận push
 self.addEventListener("push", (event) => {
-  console.log("Push received:", event);
+  console.log("🔔 Push received:", event);
 
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
+    console.log("📦 Push data:", data);
   } catch (e) {
+    console.error("❌ Failed to parse push data:", e);
     data = {
       title: "Tin nhắn mới",
       body: event.data?.text() || "Bạn có tin nhắn mới",
     };
   }
 
+  const title = data.title || "ChatApp - Tin nhắn mới";
   const options = {
     body: data.body || "Bạn có tin nhắn mới",
     icon: data.icon || "/icon.svg",
@@ -35,18 +38,29 @@ self.addEventListener("push", (event) => {
     data: {
       url: data.url || "/chat",
       conversationId: data.conversationId,
+      dateOfArrival: Date.now(),
     },
     actions: [
       { action: "open", title: "Mở", icon: "/icon.svg" },
       { action: "close", title: "Đóng" },
     ],
-    tag: data.tag || "chat-notification",
+    tag: data.tag || `chat-${Date.now()}`,
     requireInteraction: false,
     vibrate: [200, 100, 200],
+    silent: false,
   };
 
+  console.log("📨 Showing notification:", title, options);
+
   event.waitUntil(
-    self.registration.showNotification(data.title || "ChatApp", options)
+    self.registration
+      .showNotification(title, options)
+      .then(() => {
+        console.log("✅ Notification shown successfully");
+      })
+      .catch((error) => {
+        console.error("❌ Failed to show notification:", error);
+      })
   );
 });
 

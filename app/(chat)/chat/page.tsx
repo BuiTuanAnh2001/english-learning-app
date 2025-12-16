@@ -196,31 +196,47 @@ export default function ChatPage() {
           const permission = await requestNotificationPermission();
 
           if (permission === "denied") {
-            console.log("Notification permission denied");
+            console.log("❌ Notification permission denied");
+            toast.error(
+              "Bạn đã từ chối quyền thông báo. Vui lòng bật lại trong cài đặt trình duyệt."
+            );
             return;
           }
 
           if (permission === "default") {
-            console.log("Notification permission not yet granted");
+            console.log("⏳ Notification permission not yet granted");
             return;
           }
+
+          console.log("✅ Notification permission granted");
 
           // Permission granted, register service worker
           const registration = await registerServiceWorker();
           if (!registration) {
-            console.error("Service Worker registration failed");
+            console.error("❌ Service Worker registration failed");
+            toast.error("Không thể đăng ký Service Worker");
             return;
           }
+
+          console.log("✅ Service Worker registered");
 
           // Subscribe to push notifications
           const subscription = await subscribeToPushNotifications(
             session.user.id
           );
           if (subscription) {
-            toast.success("✅ Thông báo đẩy đã được bật!");
+            toast.success("✅ Thông báo đẩy đã được bật thành công!");
+            console.log(
+              "🔔 Push notifications enabled:",
+              subscription.endpoint
+            );
+          } else {
+            console.warn("⚠️ Failed to subscribe to push notifications");
+            toast.error("Không thể đăng ký nhận thông báo đẩy");
           }
         } catch (error) {
-          console.error("Setup push notifications error:", error);
+          console.error("❌ Setup push notifications error:", error);
+          toast.error("Lỗi khi thiết lập thông báo đẩy");
         }
       };
 

@@ -46,39 +46,56 @@ export async function subscribeToPushNotifications(userId: string) {
   try {
     // Check notification permission first
     if (Notification.permission !== 'granted') {
-      console.warn('Notification permission not granted');
+      console.warn('⚠️ Notification permission not granted:', Notification.permission);
       return null;
     }
 
     // Check if push is supported
     if (!('PushManager' in window)) {
-      console.warn('Push notifications not supported');
+      console.warn('⚠️ Push notifications not supported');
       return null;
     }
 
     const registration = await navigator.serviceWorker.ready;
+    console.log('✅ Service Worker ready:', registration);
 
     // Check if already subscribed
     let subscription = await registration.pushManager.getSubscription();
+    console.log('Current subscription:', subscription);
 
     if (!subscription) {
       // Validate VAPID key
       if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
-        console.error('VAPID public key not configured');
+        console.error('❌ VAPID public key not configured properly');
+        alert('⚠️ Lỗi cấu hình: VAPID key chưa được thiết lập. Vui lòng liên hệ quản trị viên.');
         return null;
       }
 
       // Subscribe to push
       const vapidPublicKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-      console.log('Subscribing with VAPID key length:', vapidPublicKey.length);
+      console.log('🔑 Subscribing with VAPID key length:', vapidPublicKey.length);
 
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: vapidPublicKey as unknown as BufferSource,
-      });
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidPublicKey as unknown as BufferSource,
+        });
+        console.log('✅ Successfully subscribed to push:', subscription.endpoint);
+      } catch (subscribeError: any) {
+        console.error('❌ Failed to subscribe:', subscribeError);
+        if (subscribeError.name === 'NotAllowedError') {
+          alert('⚠️ Bạn đã chặn thông báo. Vui lòng bật lại trong cài đặt trình duyệt.');
+        } else if (subscribeError.name === 'NotSupportedError') {
+          alert('⚠️ Trình duyệt này không hỗ trợ thông báo đẩy.');
+        } else {
+          alert(`⚠️ Lỗi khi đăng ký thông báo: ${subscribeError.message}`);
+        }
+        return null;
+      }
     }
 
     // Send subscription to server
+    console.log('📤 Sending subscription to server...');
     const response = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -90,13 +107,16 @@ export async function subscribeToPushNotifications(userId: string) {
 
     if (!response.ok) {
       const error = await response.text();
+      console.error('❌ Server rejected subscription:', error);
       throw new Error(`Failed to save subscription: ${error}`);
     }
 
-    console.log('✅ Push subscription saved:', subscription.endpoint);
+    const result = await response.json();
+    console.log('✅ Push subscription saved on server:', result);
+    console.log('🔔 Endpoint:', subscription.endpoint);
     return subscription;
   } catch (error: any) {
-    console.error('❌ Lỗi subscribe push notification:', error.name, error.message);
+    console.error('❌ Lỗi subscribe push notification:', error.name, error.message, error);
     return null;
   }
 }

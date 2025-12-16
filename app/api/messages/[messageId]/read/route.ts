@@ -1,6 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createBrowserClient } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -56,8 +56,18 @@ export async function POST(
     });
 
     // Broadcast read receipt via Supabase
-    const supabase = createBrowserClient();
-    if (supabase) {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+        }
+      );
+
       const channel = supabase.channel(`conversation:${message.conversationId}`);
       await channel.send({
         type: "broadcast",

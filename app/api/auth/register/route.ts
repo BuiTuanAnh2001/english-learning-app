@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { NextRequest, NextResponse } from 'next/server'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -64,9 +64,19 @@ export async function POST(request: NextRequest) {
       }
     }, { status: 201 })
   } catch (error) {
-    console.error('Error registering user:', error)
+    console.error('❌ Registration error:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      databaseUrlPrefix: process.env.DATABASE_URL?.substring(0, 30)
+    })
     return NextResponse.json(
-      { success: false, error: 'Failed to register user' },
+      { 
+        success: false, 
+        error: 'Failed to register user',
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown') : undefined
+      },
       { status: 500 }
     )
   }

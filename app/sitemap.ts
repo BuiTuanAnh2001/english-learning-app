@@ -1,13 +1,9 @@
 import { MetadataRoute } from 'next'
-import { getLessons } from '@/lib/services/api'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://vocaplanet.online'
   
-  // Lấy tất cả lessons
-  const lessons = await getLessons().catch(() => [])
-  
-  // Static pages
+  // Static pages only - dynamic lessons will be crawled
   const staticPages = [
     {
       url: baseUrl,
@@ -16,32 +12,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/lessons`,
+      url: `${baseUrl}/chat`,
       lastModified: new Date(),
       changeFrequency: 'daily' as const,
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/progress`,
+      url: `${baseUrl}/login`,
       lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
     },
     {
-      url: `${baseUrl}/auth`,
+      url: `${baseUrl}/signup`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     },
   ]
 
-  // Dynamic lesson pages
-  const lessonPages = lessons.map((lesson) => ({
-    url: `${baseUrl}/lessons/${lesson.id}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }))
-
-  return [...staticPages, ...lessonPages]
+  return staticPages
 }

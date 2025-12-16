@@ -3,7 +3,7 @@
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'YOUR_PUBLIC_KEY';
 
 export async function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     console.warn('Service Worker không được hỗ trợ');
     return null;
   }
@@ -21,7 +21,7 @@ export async function registerServiceWorker() {
 }
 
 export async function requestNotificationPermission() {
-  if (!('Notification' in window)) {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
     console.warn('Notification API không được hỗ trợ');
     return 'denied';
   }
@@ -39,6 +39,10 @@ export async function requestNotificationPermission() {
 }
 
 export async function subscribeToPushNotifications(userId: string) {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
   try {
     const registration = await navigator.serviceWorker.ready;
     
@@ -77,6 +81,10 @@ export async function subscribeToPushNotifications(userId: string) {
 }
 
 export async function unsubscribeFromPushNotifications(userId: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
   try {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
@@ -99,6 +107,10 @@ export async function unsubscribeFromPushNotifications(userId: string) {
 }
 
 export function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  if (typeof window === 'undefined') {
+    return new Uint8Array();
+  }
+  
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding)
     .replace(/\-/g, '+')
@@ -115,6 +127,10 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 // Test notification
 export async function testPushNotification() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
   const permission = await requestNotificationPermission();
   
   if (permission === 'granted') {

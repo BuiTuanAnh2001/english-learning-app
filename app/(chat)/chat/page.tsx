@@ -437,6 +437,18 @@ export default function ChatPage() {
             return prev;
           }
           console.log("✅ Adding new message to state");
+
+          // Show notification: toast if in current chat, push if tab hidden
+          if (!document.hidden) {
+            // User is viewing the app - show toast
+            toast.success(
+              `${newMsg.senderName || "Ai đó"} đã gửi tin nhắn mới`,
+              {
+                duration: 3000,
+              }
+            );
+          }
+
           return [...prev, message];
         });
       })
@@ -480,19 +492,28 @@ export default function ChatPage() {
               // Check if message already exists
               if (prev.some((m) => m.id === message.id)) return prev;
 
-              // Show push notification
-              if (document.hidden && Notification.permission === "granted") {
-                new Notification(`${senderInfo.name}`, {
-                  body:
-                    newMsg.type === "IMAGE"
-                      ? "📷 Đã gửi một ảnh"
-                      : newMsg.content,
-                  icon: senderInfo.avatar || "/default-avatar.png",
-                  tag: newMsg.id,
-                });
-              } else if (!document.hidden) {
-                toast.success(`Tin nhắn mới từ ${senderInfo.name}`, {
+              // Show notification based on user context
+              if (document.hidden) {
+                // Tab is hidden - show push notification
+                if (Notification.permission === "granted") {
+                  new Notification(`${senderInfo.name}`, {
+                    body:
+                      newMsg.type === "IMAGE"
+                        ? "📷 Đã gửi một ảnh"
+                        : newMsg.content,
+                    icon: senderInfo.avatar || "/default-avatar.png",
+                    tag: newMsg.id,
+                  });
+                }
+              } else {
+                // Tab is visible - show toast
+                const messagePreview =
+                  newMsg.type === "IMAGE"
+                    ? "📷 Đã gửi một ảnh"
+                    : newMsg.content;
+                toast(`${senderInfo.name}: ${messagePreview}`, {
                   duration: 3000,
+                  icon: "💬",
                 });
               }
 

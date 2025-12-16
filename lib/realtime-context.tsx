@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 import { useSession } from "next-auth/react";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -65,16 +65,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         const message = await res.json();
-
-        // Broadcast message via Supabase realtime
-        await supabase.from("Message").insert({
-          id: message.id,
-          conversationId,
-          senderId: session.user.id,
-          content,
-          type: "TEXT",
-          createdAt: new Date().toISOString(),
-        });
+        // Message is saved via API, no need to insert again
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -85,6 +76,11 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     conversationId: string,
     callback: (message: any) => void
   ) => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return () => {}; // No-op cleanup function
+    }
+
     const channel = supabase
       .channel(`conversation:${conversationId}`)
       .on(

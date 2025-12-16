@@ -8,29 +8,46 @@ const extractSupabaseConfig = () => {
   const projectRef = match ? match[1] : ''
   
   return {
-    url: `https://${projectRef}.supabase.co`,
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL || `https://${projectRef}.supabase.co`,
     // Note: For realtime to work, you need to add NEXT_PUBLIC_SUPABASE_ANON_KEY to .env
     // You can find this in Supabase Dashboard > Settings > API
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   }
 }
 
-const config = extractSupabaseConfig()
+// Create supabase client only when needed (lazy initialization)
+let supabaseInstance: ReturnType<typeof createClient> | null = null
 
-export const supabase = createClient(config.url, config.anonKey, {
-  realtime: {
-    params: {
-      eventsPerSecond: 10
+export const getSupabaseClient = () => {
+  if (!supabaseInstance) {
+    const config = extractSupabaseConfig()
+    
+    // Return null if no config available (during build)
+    if (!config.anonKey || !config.url) {
+      return null
     }
+    
+    supabaseInstance = createClient(config.url, config.anonKey, {
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    })
   }
-})
+  
+  return supabaseInstance
+}
+
+// Legacy export for backwards compatibility
+export const supabase = getSupabaseClient()
 
 // Client-side supabase for use in components (Singleton pattern)
 let browserClientInstance: ReturnType<typeof createClient> | null = null
 
 export const createBrowserClient = () => {
   if (typeof window === 'undefined') {
-    throw new Error('createBrowserClient can only be used in browser')
+    return null
   }
   
   // Return existing instance if available
@@ -38,10 +55,13 @@ export const createBrowserClient = () => {
     return browserClientInstance
   }
   
-  const projectRef = 'vehatkcukaloprvqcejz'
-  const url = `https://${projectRef}.supabase.co`
-  // Phải hardcode hoặc dùng next.config.js để expose NEXT_PUBLIC_*
-  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaGF0a2N1a2Fsb3BydnFjZWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzM5NTUsImV4cCI6MjA3OTgwOTk1NX0.jn_5NZQhpV65dh8wgIdELp7HPTs1C9RmT-GwjNIo4ds'
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  
+  if (!url || !anonKey) {
+    console.warn('Supabase env vars not found')
+    return null
+  }
   
   console.log('✅ Supabase client created:', url)
   console.log('🔑 Using anon key:', anonKey.substring(0, 20) + '...')

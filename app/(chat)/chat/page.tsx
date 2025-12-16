@@ -143,6 +143,10 @@ export default function ChatPage() {
       selectedConversation.id
     );
     const supabase = createBrowserClient();
+    if (!supabase) {
+      console.warn("⚠️ Supabase client not available");
+      return;
+    }
 
     // Subscribe to broadcast events (manual broadcasts from API)
     const channel = supabase

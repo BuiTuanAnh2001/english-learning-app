@@ -41,7 +41,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
@@ -101,8 +101,83 @@ export default function ChatPage() {
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(
     null
   );
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const reactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Define callbacks before useEffect to avoid dependency issues
+  const loadConversations = useCallback(async () => {
+    try {
+      const res = await fetch("/api/conversations");
+      if (res.ok) {
+        const response = await res.json();
+        const conversations = response.success ? response.data : [];
+
+        // Transform the data to match our interface
+        const transformedConversations = (conversations || []).map(
+          (conv: any) => {
+            const otherMember = conv.members?.find(
+              (m: any) => m.userId !== session?.user?.id
+            );
+
+            return {
+              id: conv.id,
+              name:
+                conv.type === "GROUP"
+                  ? conv.name
+                  : otherMember?.user?.name || "Unknown",
+              avatar:
+                conv.type === "GROUP" ? conv.avatar : otherMember?.user?.avatar,
+              lastMessage: conv.messages?.[0]?.content,
+              lastMessageTime: conv.messages?.[0]?.createdAt,
+              unreadCount: conv.unreadCount || 0,
+              type: conv.type,
+              isOnline: otherMember?.user?.status === "ONLINE",
+            };
+          }
+        );
+
+        setConversations(transformedConversations);
+      }
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+      setConversations([]);
+    }
+  }, [session?.user?.id]);
+
+  const loadMessages = useCallback(async (conversationId: string) => {
+    setIsLoadingMessages(true);
+    try {
+      const res = await fetch(`/api/conversations/${conversationId}/messages`);
+      if (res.ok) {
+        const response = await res.json();
+        const messagesData = response.success ? response.data : [];
+
+        // Transform messages to match our interface
+        const transformedMessages = (messagesData || []).map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          senderId: msg.senderId,
+          senderName: msg.sender?.name || "Unknown",
+          senderAvatar: msg.sender?.avatar,
+          createdAt: msg.createdAt,
+          type: msg.type || "TEXT",
+          fileUrl: msg.fileUrl,
+          fileName: msg.fileName,
+          reactions: msg.reactions || {},
+        }));
+
+        setMessages(transformedMessages);
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+      toast.error("Không thể tải tin nhắn");
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -151,11 +226,40 @@ export default function ChatPage() {
 
       setupPushNotifications();
     }
-  }, [session]);
+  }, [session, loadConversations]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Realtime subscription for conversation list updates
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const supabase = createBrowserClient();
+    if (!supabase) return;
+
+    // Subscribe to message updates to refresh conversation list
+    const channel = supabase
+      .channel(`user:${session.user.id}:conversations`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "Message",
+        },
+        () => {
+          // Reload conversations when new message is received
+          loadConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id, loadConversations]);
 
   // Realtime subscription for messages
   useEffect(() => {
@@ -339,223 +443,289 @@ export default function ChatPage() {
     };
   }, [selectedConversation?.id, session?.user?.id]);
 
-  const loadConversations = async () => {
-    try {
-      const res = await fetch("/api/conversations");
-      if (res.ok) {
-        const response = await res.json();
-        const conversations = response.success ? response.data : [];
+  const handleConversationClick = useCallback(
+    (conversation: Conversation) => {
+      setSelectedConversation(conversation);
+      loadMessages(conversation.id);
+    },
+    [loadMessages]
+  );
 
-        // Transform the data to match our interface
-        const transformedConversations = (conversations || []).map(
-          (conv: any) => {
-            const otherMember = conv.members?.find(
-              (m: any) => m.userId !== session?.user?.id
-            );
+  const handleImageSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-            return {
-              id: conv.id,
-              name:
-                conv.type === "GROUP"
-                  ? conv.name
-                  : otherMember?.user?.name || "Unknown",
-              avatar:
-                conv.type === "GROUP" ? conv.avatar : otherMember?.user?.avatar,
-              lastMessage: conv.messages?.[0]?.content,
-              lastMessageTime: conv.messages?.[0]?.createdAt,
-              unreadCount: conv.unreadCount || 0,
-              type: conv.type,
-              isOnline: otherMember?.user?.status === "ONLINE",
-            };
-          }
-        );
-
-        setConversations(transformedConversations);
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Vui lòng chọn file ảnh!");
+        return;
       }
-    } catch (error) {
-      console.error("Error loading conversations:", error);
-      setConversations([]);
-    }
-  };
 
-  const loadMessages = async (conversationId: string) => {
-    try {
-      const res = await fetch(`/api/conversations/${conversationId}/messages`);
-      if (res.ok) {
-        const response = await res.json();
-        const messagesData = response.success ? response.data : [];
-
-        // Transform messages to match our interface
-        const transformedMessages = (messagesData || []).map((msg: any) => ({
-          id: msg.id,
-          content: msg.content,
-          senderId: msg.senderId,
-          senderName: msg.sender?.name || "Unknown",
-          senderAvatar: msg.sender?.avatar,
-          createdAt: msg.createdAt,
-          type: msg.type || "TEXT",
-          fileUrl: msg.fileUrl,
-          fileName: msg.fileName,
-        }));
-
-        setMessages(transformedMessages);
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Kích thước ảnh tối đa 5MB!");
+        return;
       }
-    } catch (error) {
-      console.error("Error loading messages:", error);
-    }
-  };
 
-  const handleConversationClick = (conversation: Conversation) => {
-    setSelectedConversation(conversation);
-    loadMessages(conversation.id);
-  };
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    },
+    []
+  );
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Vui lòng chọn file ảnh!");
-      return;
-    }
-
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Kích thước ảnh tối đa 5MB!");
-      return;
-    }
-
-    setSelectedImage(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveImage = () => {
+  const handleRemoveImage = useCallback(() => {
     setSelectedImage(null);
     setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
+  }, []);
 
-  const handleAddReaction = async (messageId: string, emoji: string) => {
-    try {
-      const res = await fetch(`/api/messages/${messageId}/reactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emoji }),
-      });
+  const handleAddReaction = useCallback(
+    async (messageId: string, emoji: string) => {
+      if (!session?.user?.id) return;
 
-      if (res.ok) {
-        const response = await res.json();
-        if (response.removed) {
-          // Remove reaction locally (handled by realtime)
-        } else {
-          // Add reaction locally (handled by realtime)
-        }
-      }
-    } catch (error) {
-      console.error("Error adding reaction:", error);
-      toast.error("Không thể thả reaction");
-    }
-    setShowReactionPicker(null);
-  };
+      setShowReactionPicker(null);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!newMessage.trim() && !selectedImage) || !selectedConversation) return;
+      // Optimistic update
+      const userId = session.user.id;
+      const userName = session.user.name || "You";
 
-    const messageContent = newMessage;
-    setNewMessage(""); // Clear immediately for better UX
-    setShowEmojiPicker(false);
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id === messageId) {
+            const reactions = { ...(msg.reactions || {}) };
+            const emojiReactions = reactions[emoji] || [];
 
-    let imageUrl = null;
-    let imageName = null;
+            // Check if already reacted - toggle reaction
+            const alreadyReacted = emojiReactions.some(
+              (r) => r.userId === userId
+            );
 
-    // Upload image if selected
-    if (selectedImage) {
-      setIsUploading(true);
-      try {
-        const formData = new FormData();
-        formData.append("file", selectedImage);
+            if (alreadyReacted) {
+              reactions[emoji] = emojiReactions.filter(
+                (r) => r.userId !== userId
+              );
+              if (reactions[emoji].length === 0) delete reactions[emoji];
+            } else {
+              reactions[emoji] = [...emojiReactions, { userId, userName }];
+            }
 
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          imageUrl = uploadData.data.url;
-          imageName = uploadData.data.fileName;
-        } else {
-          alert("Không thể upload ảnh. Vui lòng thử lại!");
-          setNewMessage(messageContent);
-          setIsUploading(false);
-          return;
-        }
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        alert("Lỗi khi upload ảnh!");
-        setNewMessage(messageContent);
-        setIsUploading(false);
-        return;
-      }
-      setIsUploading(false);
-      handleRemoveImage();
-    }
-
-    try {
-      const res = await fetch(
-        `/api/conversations/${selectedConversation.id}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: messageContent || (imageUrl ? "" : ""),
-            type: imageUrl ? "IMAGE" : "TEXT",
-            fileUrl: imageUrl,
-            fileName: imageName,
-          }),
-        }
+            return { ...msg, reactions };
+          }
+          return msg;
+        })
       );
 
-      if (res.ok) {
-        const response = await res.json();
-        const messageData = response.success ? response.data : response;
-
-        // Transform message to match our interface
-        const newMsg: Message = {
-          id: messageData.id,
-          content: messageData.content,
-          senderId: messageData.senderId || session?.user?.id || "",
-          senderName: messageData.sender?.name || session?.user?.name || "You",
-          senderAvatar: messageData.sender?.avatar || session?.user?.image,
-          createdAt: messageData.createdAt || new Date(),
-          type: messageData.type || "TEXT",
-          fileUrl: messageData.fileUrl,
-          fileName: messageData.fileName,
-        };
-
-        // Add message to local state immediately for instant feedback
-        setMessages((prev) => {
-          // Check if already exists (prevent duplicates)
-          if (prev.some((m) => m.id === newMsg.id)) return prev;
-          return [...prev, newMsg];
-        });
+      // Debounce API call
+      if (reactionTimeoutRef.current) {
+        clearTimeout(reactionTimeoutRef.current);
       }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      // Restore message on error
-      setNewMessage(messageContent);
-    }
-  };
 
-  const searchUsers = async (query: string) => {
+      reactionTimeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/messages/${messageId}/reactions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emoji }),
+          });
+
+          if (!res.ok) {
+            // Revert optimistic update on error
+            setMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.id === messageId) {
+                  const reactions = { ...(msg.reactions || {}) };
+                  const emojiReactions = reactions[emoji] || [];
+                  const alreadyReacted = emojiReactions.some(
+                    (r) => r.userId === userId
+                  );
+
+                  if (alreadyReacted) {
+                    reactions[emoji] = emojiReactions.filter(
+                      (r) => r.userId !== userId
+                    );
+                    if (reactions[emoji].length === 0) delete reactions[emoji];
+                  } else {
+                    reactions[emoji] = [
+                      ...emojiReactions,
+                      { userId, userName },
+                    ];
+                  }
+
+                  return { ...msg, reactions };
+                }
+                return msg;
+              })
+            );
+            toast.error("Không thể thả reaction");
+          }
+        } catch (error) {
+          console.error("Error adding reaction:", error);
+          toast.error("Không thể thả reaction");
+        }
+      }, 300);
+    },
+    [session?.user?.id, session?.user?.name]
+  );
+
+  const handleSendMessage = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (
+        (!newMessage.trim() && !selectedImage) ||
+        !selectedConversation ||
+        isSendingMessage
+      )
+        return;
+
+      const messageContent = newMessage;
+      const tempId = `temp-${Date.now()}`;
+      setNewMessage(""); // Clear immediately for better UX
+      setShowEmojiPicker(false);
+      setIsSendingMessage(true);
+
+      let imageUrl = null;
+      let imageName = null;
+
+      // Upload image if selected
+      if (selectedImage) {
+        setIsUploading(true);
+        try {
+          const formData = new FormData();
+          formData.append("file", selectedImage);
+
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            imageUrl = uploadData.data.url;
+            imageName = uploadData.data.fileName;
+          } else {
+            toast.error("Không thể upload ảnh. Vui lòng thử lại!");
+            setNewMessage(messageContent);
+            setIsUploading(false);
+            setIsSendingMessage(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          toast.error("Lỗi khi upload ảnh!");
+          setNewMessage(messageContent);
+          setIsUploading(false);
+          setIsSendingMessage(false);
+          return;
+        }
+        setIsUploading(false);
+        handleRemoveImage();
+      }
+
+      // Optimistic update - add message immediately
+      const optimisticMessage: Message = {
+        id: tempId,
+        content: messageContent || "",
+        senderId: session?.user?.id || "",
+        senderName: session?.user?.name || "You",
+        senderAvatar: session?.user?.image || undefined,
+        createdAt: new Date(),
+        type: imageUrl ? "IMAGE" : "TEXT",
+        fileUrl: imageUrl || undefined,
+        fileName: imageName || undefined,
+        reactions: {},
+      };
+
+      setMessages((prev) => [...prev, optimisticMessage]);
+
+      // Update conversation list optimistically
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === selectedConversation.id
+            ? {
+                ...conv,
+                lastMessage: messageContent || "📷 Ảnh",
+                lastMessageTime: new Date(),
+              }
+            : conv
+        )
+      );
+
+      try {
+        const res = await fetch(
+          `/api/conversations/${selectedConversation.id}/messages`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: messageContent || (imageUrl ? "" : ""),
+              type: imageUrl ? "IMAGE" : "TEXT",
+              fileUrl: imageUrl,
+              fileName: imageName,
+            }),
+          }
+        );
+
+        if (res.ok) {
+          const response = await res.json();
+          const messageData = response.success ? response.data : response;
+
+          // Replace temporary message with real one
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempId
+                ? {
+                    id: messageData.id,
+                    content: messageData.content,
+                    senderId: messageData.senderId || session?.user?.id || "",
+                    senderName:
+                      messageData.sender?.name || session?.user?.name || "You",
+                    senderAvatar:
+                      messageData.sender?.avatar || session?.user?.image,
+                    createdAt: messageData.createdAt || new Date(),
+                    type: messageData.type || "TEXT",
+                    fileUrl: messageData.fileUrl,
+                    fileName: messageData.fileName,
+                    reactions: {},
+                  }
+                : msg
+            )
+          );
+        } else {
+          // Remove optimistic message on error
+          setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+          toast.error("Không thể gửi tin nhắn");
+          setNewMessage(messageContent);
+        }
+      } catch (error) {
+        console.error("Error sending message:", error);
+        // Remove optimistic message on error
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+        toast.error("Không thể gửi tin nhắn");
+        setNewMessage(messageContent);
+      } finally {
+        setIsSendingMessage(false);
+      }
+    },
+    [
+      newMessage,
+      selectedImage,
+      selectedConversation,
+      isSendingMessage,
+      session?.user?.id,
+      session?.user?.name,
+      session?.user?.image,
+      handleRemoveImage,
+    ]
+  );
+
+  const searchUsers = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchedUsers([]);
       return;
@@ -575,7 +745,7 @@ export default function ChatPage() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
 
   const createConversation = async (userId: string) => {
     try {
@@ -617,8 +787,12 @@ export default function ChatPage() {
     }
   };
 
-  const filteredConversations = (conversations || []).filter((conv) =>
-    conv?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = useMemo(
+    () =>
+      (conversations || []).filter((conv) =>
+        conv?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [conversations, searchQuery]
   );
 
   if (status === "loading") {
@@ -879,7 +1053,16 @@ export default function ChatPage() {
             {/* Messages */}
             <ScrollArea className="flex-1 px-4 py-3">
               <div className="space-y-3 max-w-4xl mx-auto">
-                {messages.length === 0 ? (
+                {isLoadingMessages ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-slate-400">
+                        Đang tải tin nhắn...
+                      </p>
+                    </div>
+                  </div>
+                ) : messages.length === 0 ? (
                   <div className="text-center py-20 text-slate-500">
                     <p className="text-sm">Chưa có tin nhắn nào</p>
                     <p className="text-xs mt-1">Hãy gửi tin nhắn đầu tiên!</p>
@@ -1127,10 +1310,12 @@ export default function ChatPage() {
                   size="icon"
                   className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white shadow-lg shadow-cyan-500/20 flex-shrink-0"
                   disabled={
-                    (!newMessage.trim() && !selectedImage) || isUploading
+                    (!newMessage.trim() && !selectedImage) ||
+                    isUploading ||
+                    isSendingMessage
                   }
                 >
-                  {isUploading ? (
+                  {isUploading || isSendingMessage ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Send className="w-4 h-4" />

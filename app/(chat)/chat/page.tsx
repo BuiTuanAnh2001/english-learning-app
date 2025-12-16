@@ -114,19 +114,42 @@ export default function ChatPage() {
     if (session?.user) {
       loadConversations();
 
-      // Register Service Worker and request notification permission
-      registerServiceWorker().then(async (registration) => {
-        if (registration) {
+      // Register Service Worker and setup push notifications
+      const setupPushNotifications = async () => {
+        try {
+          // First, request permission
           const permission = await requestNotificationPermission();
-          if (permission === "granted") {
-            toast.success("Đã bật thông báo đẩy!");
-            // Subscribe to push notifications
-            await subscribeToPushNotifications(session.user.id);
-          } else if (permission === "denied") {
-            toast.error("Vui lòng bật quyền thông báo trong trình duyệt");
+
+          if (permission === "denied") {
+            console.log("Notification permission denied");
+            return;
           }
+
+          if (permission === "default") {
+            console.log("Notification permission not yet granted");
+            return;
+          }
+
+          // Permission granted, register service worker
+          const registration = await registerServiceWorker();
+          if (!registration) {
+            console.error("Service Worker registration failed");
+            return;
+          }
+
+          // Subscribe to push notifications
+          const subscription = await subscribeToPushNotifications(
+            session.user.id
+          );
+          if (subscription) {
+            toast.success("✅ Thông báo đẩy đã được bật!");
+          }
+        } catch (error) {
+          console.error("Setup push notifications error:", error);
         }
-      });
+      };
+
+      setupPushNotifications();
     }
   }, [session]);
 

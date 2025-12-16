@@ -68,22 +68,6 @@ export const authOptions: NextAuthOptions = {
         token.avatar = user.avatar
       }
       
-      // Update user status to ONLINE on login (non-blocking)
-      if (account && user) {
-        try {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { 
-              status: 'ONLINE',
-              lastSeen: new Date()
-            },
-          }).catch(err => console.error('Failed to update user status:', err))
-        } catch (error) {
-          // Ignore error to not block login
-          console.error('Failed to update user status:', error)
-        }
-      }
-      
       return token
     },
     async session({ session, token }) {
@@ -91,6 +75,18 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.avatar = token.avatar as string
       }
+      
+      // Update user status to ONLINE (non-blocking, don't throw errors)
+      if (session.user?.id) {
+        prisma.user.update({
+          where: { id: session.user.id },
+          data: { 
+            status: 'ONLINE',
+            lastSeen: new Date()
+          },
+        }).catch(() => {}) // Silently ignore errors
+      }
+      
       return session
     },
     async redirect({ url, baseUrl }) {

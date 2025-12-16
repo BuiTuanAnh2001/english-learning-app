@@ -44,14 +44,34 @@ export async function subscribeToPushNotifications(userId: string) {
   }
   
   try {
+    // Check notification permission first
+    if (Notification.permission !== 'granted') {
+      console.warn('Notification permission not granted');
+      return null;
+    }
+
+    // Check if push is supported
+    if (!('PushManager' in window)) {
+      console.warn('Push notifications not supported');
+      return null;
+    }
+
     const registration = await navigator.serviceWorker.ready;
     
     // Check if already subscribed
     let subscription = await registration.pushManager.getSubscription();
     
     if (!subscription) {
+      // Validate VAPID key
+      if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+        console.error('VAPID public key not configured');
+        return null;
+      }
+
       // Subscribe to push
       const vapidPublicKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      console.log('Subscribing with VAPID key length:', vapidPublicKey.length);
+      
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: vapidPublicKey as unknown as BufferSource,
@@ -69,13 +89,14 @@ export async function subscribeToPushNotifications(userId: string) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to save subscription');
+      const error = await response.text();
+      throw new Error(`Failed to save subscription: ${error}`);
     }
 
-    console.log('Push subscription saved:', subscription);
+    console.log('✅ Push subscription saved:', subscription.endpoint);
     return subscription;
-  } catch (error) {
-    console.error('Lỗi subscribe push notification:', error);
+  } catch (error: any) {
+    console.error('❌ Lỗi subscribe push notification:', error.name, error.message);
     return null;
   }
 }

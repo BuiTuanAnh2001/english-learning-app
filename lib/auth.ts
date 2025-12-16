@@ -62,10 +62,10 @@ export const authOptions: NextAuthOptions = {
   },
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.avatar = user.avatar
+        token.avatar = user.avatar || user.image
       }
       
       return token
@@ -76,17 +76,6 @@ export const authOptions: NextAuthOptions = {
         session.user.avatar = token.avatar as string
       }
       
-      // Update user status to ONLINE (non-blocking, don't throw errors)
-      if (session.user?.id) {
-        prisma.user.update({
-          where: { id: session.user.id },
-          data: { 
-            status: 'ONLINE',
-            lastSeen: new Date()
-          },
-        }).catch(() => {}) // Silently ignore errors
-      }
-      
       return session
     },
     async redirect({ url, baseUrl }) {
@@ -95,24 +84,6 @@ export const authOptions: NextAuthOptions = {
         return `${baseUrl}/chat`
       }
       return url.startsWith(baseUrl) ? url : baseUrl
-    },
-  },
-  events: {
-    async signOut({ token }) {
-      // Update user status to OFFLINE on logout (non-blocking)
-      if (token?.id) {
-        try {
-          await prisma.user.update({
-            where: { id: token.id as string },
-            data: { 
-              status: 'OFFLINE',
-              lastSeen: new Date()
-            },
-          }).catch(err => console.error('Failed to update user status on signout:', err))
-        } catch (error) {
-          console.error('Failed to update user status on signout:', error)
-        }
-      }
     },
   },
 }

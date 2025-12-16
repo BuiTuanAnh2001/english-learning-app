@@ -29,6 +29,7 @@ import {
   MoreVertical,
   Phone,
   Plus,
+  Reply,
   Search,
   Send,
   Settings,
@@ -68,6 +69,11 @@ interface Message {
   fileUrl?: string;
   fileName?: string;
   reactions?: { [emoji: string]: { userId: string; userName: string }[] };
+  replyTo?: {
+    id: string;
+    content: string;
+    senderName: string;
+  };
 }
 
 interface User {
@@ -104,6 +110,7 @@ export default function ChatPage() {
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(
     null
   );
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -188,6 +195,13 @@ export default function ChatPage() {
             fileUrl: msg.fileUrl,
             fileName: msg.fileName,
             reactions: reactionsObj,
+            replyTo: msg.replyTo
+              ? {
+                  id: msg.replyTo.id,
+                  content: msg.replyTo.content,
+                  senderName: msg.replyTo.sender?.name || "Unknown",
+                }
+              : undefined,
           };
         });
 
@@ -770,6 +784,13 @@ export default function ChatPage() {
         fileUrl: imageUrl || undefined,
         fileName: imageName || undefined,
         reactions: {},
+        replyTo: replyingTo
+          ? {
+              id: replyingTo.id,
+              content: replyingTo.content,
+              senderName: replyingTo.senderName,
+            }
+          : undefined,
       };
 
       setMessages((prev) => [...prev, optimisticMessage]);
@@ -798,6 +819,7 @@ export default function ChatPage() {
               type: imageUrl ? "IMAGE" : "TEXT",
               fileUrl: imageUrl,
               fileName: imageName,
+              replyToId: replyingTo?.id,
             }),
           }
         );
@@ -805,6 +827,9 @@ export default function ChatPage() {
         if (res.ok) {
           const response = await res.json();
           const messageData = response.success ? response.data : response;
+
+          // Clear reply after sending
+          setReplyingTo(null);
 
           // Replace temporary message with real one
           setMessages((prev) =>
@@ -823,6 +848,13 @@ export default function ChatPage() {
                     fileUrl: messageData.fileUrl,
                     fileName: messageData.fileName,
                     reactions: {},
+                    replyTo: messageData.replyTo
+                      ? {
+                          id: messageData.replyTo.id,
+                          content: messageData.replyTo.content,
+                          senderName: messageData.replyTo.sender?.name || "",
+                        }
+                      : undefined,
                   }
                 : msg
             )
@@ -1243,6 +1275,25 @@ export default function ChatPage() {
                                   : "bg-slate-800 text-white rounded-bl-sm"
                               )}
                             >
+                              {/* Replied message preview */}
+                              {message.replyTo && (
+                                <div
+                                  className={cn(
+                                    "mb-2 p-2 rounded-lg border-l-2 text-xs opacity-80",
+                                    isOwn
+                                      ? "bg-cyan-700/30 border-white/50"
+                                      : "bg-slate-700/50 border-slate-400"
+                                  )}
+                                >
+                                  <div className="font-semibold mb-0.5">
+                                    {message.replyTo.senderName}
+                                  </div>
+                                  <div className="truncate">
+                                    {message.replyTo.content}
+                                  </div>
+                                </div>
+                              )}
+
                               {message.type === "TEXT" && (
                                 <p className="text-sm leading-relaxed">
                                   {message.content}
@@ -1272,22 +1323,37 @@ export default function ChatPage() {
                               )}
                             </div>
 
-                            {/* Reaction button */}
-                            <button
-                              onClick={() =>
-                                setShowReactionPicker(
-                                  showReactionPicker === message.id
-                                    ? null
-                                    : message.id
-                                )
-                              }
+                            {/* Action buttons */}
+                            <div
                               className={cn(
-                                "absolute top-0 bg-slate-700 hover:bg-slate-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                                isOwn ? "-left-8" : "-right-8"
+                                "absolute top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+                                isOwn ? "-left-16" : "-right-16"
                               )}
                             >
-                              <Smile className="w-4 h-4 text-slate-300" />
-                            </button>
+                              {/* Reply button */}
+                              <button
+                                onClick={() => setReplyingTo(message)}
+                                className="bg-slate-700 hover:bg-slate-600 rounded-full p-1"
+                                title="Trả lời"
+                              >
+                                <Reply className="w-4 h-4 text-slate-300" />
+                              </button>
+
+                              {/* Reaction button */}
+                              <button
+                                onClick={() =>
+                                  setShowReactionPicker(
+                                    showReactionPicker === message.id
+                                      ? null
+                                      : message.id
+                                  )
+                                }
+                                className="bg-slate-700 hover:bg-slate-600 rounded-full p-1"
+                                title="Thêm reaction"
+                              >
+                                <Smile className="w-4 h-4 text-slate-300" />
+                              </button>
+                            </div>
 
                             {/* Reaction picker popup */}
                             {showReactionPicker === message.id && (
@@ -1356,6 +1422,27 @@ export default function ChatPage() {
 
             {/* Message Input */}
             <div className="border-t border-slate-800/50 p-3 bg-slate-900/50 backdrop-blur-sm flex-shrink-0">
+              {/* Reply Preview Banner */}
+              {replyingTo && (
+                <div className="max-w-4xl mx-auto mb-2 bg-slate-800 rounded-lg p-3 flex items-start gap-2 border border-slate-700">
+                  <Reply className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-cyan-400 mb-1">
+                      Trả lời {replyingTo.senderName}
+                    </div>
+                    <div className="text-sm text-slate-300 truncate">
+                      {replyingTo.content}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="text-slate-400 hover:text-white transition-colors flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
               {/* Image Preview */}
               {imagePreview && (
                 <div className="max-w-4xl mx-auto mb-3 relative inline-block">

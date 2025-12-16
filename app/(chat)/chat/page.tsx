@@ -889,7 +889,11 @@ export default function ChatPage() {
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === tempId
-                  ? { ...msg, fileUrl: imageUrl ?? undefined, fileName: imageName ?? undefined }
+                  ? {
+                      ...msg,
+                      fileUrl: imageUrl ?? undefined,
+                      fileName: imageName ?? undefined,
+                    }
                   : msg
               )
             );
@@ -934,9 +938,9 @@ export default function ChatPage() {
           const response = await res.json();
           const messageData = response.success ? response.data : response;
 
-          // Replace temporary message with real one
-          setMessages((prev) =>
-            prev.map((msg) =>
+          // Replace temporary message with real one and sort by timestamp
+          setMessages((prev) => {
+            const updated = prev.map((msg) =>
               msg.id === tempId
                 ? {
                     id: messageData.id,
@@ -960,8 +964,15 @@ export default function ChatPage() {
                       : undefined,
                   }
                 : msg
-            )
-          );
+            );
+
+            // Sort messages by createdAt to maintain correct order
+            return updated.sort(
+              (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime()
+            );
+          });
         } else {
           // Remove optimistic message on error
           setMessages((prev) => prev.filter((msg) => msg.id !== tempId));

@@ -88,6 +88,9 @@ export default function ChatPage() {
     useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [typingUsers, setTypingUsers] = useState<{
+    [conversationId: string]: { userId: string; userName: string }[];
+  }>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -106,6 +109,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Define callbacks before useEffect to avoid dependency issues
   const loadConversations = useCallback(async () => {
@@ -178,6 +182,49 @@ export default function ChatPage() {
       setIsLoadingMessages(false);
     }
   }, []);
+
+  // Broadcast typing status
+  const broadcastTyping = useCallback(
+    async (isTyping: boolean) => {
+      if (!selectedConversation?.id || !session?.user) return;
+
+      const supabase = createBrowserClient();
+      if (!supabase) return;
+
+      const channel = supabase.channel(
+        `conversation:${selectedConversation.id}`
+      );
+
+      try {
+        await channel.send({
+          type: "broadcast",
+          event: isTyping ? "typing_start" : "typing_stop",
+          payload: {
+            userId: session.user.id,
+            userName: session.user.name,
+          },
+        });
+      } catch (error) {
+        console.error("Error broadcasting typing status:", error);
+      }
+    },
+    [selectedConversation?.id, session?.user]
+  );
+
+  // Handle typing indicator with debounce
+  const handleTyping = useCallback(() => {
+    broadcastTyping(true);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to stop typing after 3 seconds
+    typingTimeoutRef.current = setTimeout(() => {
+      broadcastTyping(false);
+    }, 3000);
+  }, [broadcastTyping]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -442,6 +489,42 @@ export default function ChatPage() {
           })
         );
       })
+      .on("broadcast", { event: "typing_start" }, (payload) => {
+        const { userId, userName } = payload.payload;
+        console.log("⌨️ User started typing:", userName);
+
+        if (userId !== session.user.id && selectedConversation?.id) {
+          setTypingUsers((prev) => {
+            const convTyping = prev[selectedConversation.id] || [];
+            if (!convTyping.some((u) => u.userId === userId)) {
+              return {
+                ...prev,
+                [selectedConversation.id]: [
+                  ...convTyping,
+                  { userId, userName },
+                ],
+              };
+            }
+            return prev;
+          });
+        }
+      })
+      .on("broadcast", { event: "typing_stop" }, (payload) => {
+        const { userId } = payload.payload;
+        console.log("⌨️ User stopped typing");
+
+        if (selectedConversation?.id) {
+          setTypingUsers((prev) => {
+            const convTyping = prev[selectedConversation.id] || [];
+            return {
+              ...prev,
+              [selectedConversation.id]: convTyping.filter(
+                (u) => u.userId !== userId
+              ),
+            };
+          });
+        }
+      })
       .subscribe((status) => {
         console.log("📡 Subscription status:", status);
         if (status === "SUBSCRIBED") {
@@ -456,8 +539,14 @@ export default function ChatPage() {
     return () => {
       console.log("🔌 Cleaning up realtime subscription");
       supabase.removeChannel(channel);
+
+      // Clear typing indicator when leaving conversation
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      broadcastTyping(false);
     };
-  }, [selectedConversation?.id, session?.user?.id]);
+  }, [selectedConversation?.id, session?.user?.id, broadcastTyping]);
 
   const handleConversationClick = useCallback(
     (conversation: Conversation) => {
@@ -593,6 +682,13 @@ export default function ChatPage() {
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+
+      // Stop typing indicator when sending
+      broadcastTyping(false);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
       if (
         (!newMessage.trim() && !selectedImage) ||
         !selectedConversation ||
@@ -1025,7 +1121,18 @@ export default function ChatPage() {
                     {selectedConversation.name}
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    {selectedConversation.isOnline ? (
+                    {typingUsers[selectedConversation.id]?.length > 0 ? (
+                      <span className="text-cyan-400 flex items-center gap-1">
+                        <span className="animate-pulse">●</span>
+                        {typingUsers[selectedConversation.id].length === 1
+                          ? `${
+                              typingUsers[selectedConversation.id][0].userName
+                            } đang nhập...`
+                          : `${
+                              typingUsers[selectedConversation.id].length
+                            } người đang nhập...`}
+                      </span>
+                    ) : selectedConversation.isOnline ? (
                       <span className="text-green-400">● Đang hoạt động</span>
                     ) : (
                       "Không hoạt động"
@@ -1281,7 +1388,10 @@ export default function ChatPage() {
                       isUploading ? "Đang upload ảnh..." : "Nhập tin nhắn..."
                     }
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      handleTyping();
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();

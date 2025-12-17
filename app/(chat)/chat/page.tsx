@@ -1,5 +1,6 @@
 "use client";
 
+import { CallDialog } from "@/components/chat/call-dialog";
 import { GifPicker } from "@/components/chat/gif-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
   MessageSquare,
   MoreVertical,
   Phone,
+  PhoneOff,
   Plus,
   Reply,
   Search,
@@ -144,6 +146,19 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showConversationList, setShowConversationList] = useState(true);
   const isMobile = useIsMobile();
+
+  // Call states
+  const [showCallDialog, setShowCallDialog] = useState(false);
+  const [callType, setCallType] = useState<"voice" | "video">("voice");
+  const [isOutgoingCall, setIsOutgoingCall] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<{
+    from: string;
+    fromName: string;
+    fromAvatar?: string;
+    type: "voice" | "video";
+    channelName: string;
+  } | null>(null);
+  const [showIncomingCallDialog, setShowIncomingCallDialog] = useState(false);
 
   // Define callbacks before useEffect to avoid dependency issues
   const loadConversations = useCallback(async () => {
@@ -431,6 +446,45 @@ export default function ChatPage() {
 
     return () => {
       console.log("🔌 Cleaning up user status subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
+  // Subscribe to incoming calls
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const supabase = createBrowserClient();
+    if (!supabase) return;
+
+    console.log("📞 Setting up incoming call subscription");
+
+    const channel = supabase
+      .channel(`user:${session.user.id}:calls`)
+      .on("broadcast", { event: "incoming_call" }, (payload) => {
+        const { from, fromName, fromAvatar, type, channelName } =
+          payload.payload;
+        console.log("📞 Incoming call from:", fromName);
+
+        // Show incoming call notification
+        setIncomingCall({
+          from,
+          fromName,
+          fromAvatar,
+          type,
+          channelName,
+        });
+        setShowIncomingCallDialog(true);
+
+        // Play ringtone (optional)
+        const audio = new Audio("/ringtone.mp3");
+        audio.loop = true;
+        audio.play().catch(() => console.log("Cannot play ringtone"));
+      })
+      .subscribe();
+
+    return () => {
+      console.log("📞 Cleaning up incoming call subscription");
       supabase.removeChannel(channel);
     };
   }, [session?.user?.id]);
@@ -1379,6 +1433,69 @@ export default function ChatPage() {
     }
   }, []);
 
+  // Start call
+  const startCall = useCallback(
+    async (type: "voice" | "video") => {
+      if (!selectedConversation) {
+        toast.error("Vui lòng chọn cuộc trò chuyện");
+        return;
+      }
+
+      setCallType(type);
+      setIsOutgoingCall(true);
+      setShowCallDialog(true);
+
+      // Broadcast incoming call to other user
+      const supabase = createBrowserClient();
+      if (supabase && selectedConversation.otherUserId) {
+        const channel = supabase.channel(
+          `user:${selectedConversation.otherUserId}:calls`
+        );
+        await channel.send({
+          type: "broadcast",
+          event: "incoming_call",
+          payload: {
+            from: session?.user?.id,
+            fromName: session?.user?.name || "Unknown",
+            fromAvatar: session?.user?.image,
+            type,
+            channelName: `call-${selectedConversation.id}`,
+          },
+        });
+      }
+
+      toast.success(
+        `Đang bắt đầu ${
+          type === "voice" ? "cuộc gọi thoại" : "cuộc gọi video"
+        }...`
+      );
+    },
+    [selectedConversation, session?.user]
+  );
+
+  const handleCallEnd = useCallback(() => {
+    setShowCallDialog(false);
+    toast("Cuộc gọi đã kết thúc", { icon: "📞" });
+  }, []);
+
+  // Accept incoming call
+  const handleAcceptCall = useCallback(() => {
+    if (!incomingCall) return;
+
+    setCallType(incomingCall.type);
+    setIsOutgoingCall(false);
+    setShowIncomingCallDialog(false);
+    setShowCallDialog(true);
+    setIncomingCall(null);
+  }, [incomingCall]);
+
+  // Reject incoming call
+  const handleRejectCall = useCallback(() => {
+    setShowIncomingCallDialog(false);
+    setIncomingCall(null);
+    toast("Đã từ chối cuộc gọi", { icon: "📞" });
+  }, []);
+
   const createConversation = async (userId: string) => {
     try {
       const res = await fetch("/api/conversations", {
@@ -1698,7 +1815,7 @@ export default function ChatPage() {
                             } người đang nhập...`}
                       </span>
                     ) : selectedConversation.isOnline ? (
-                      <span className="text-green-400">● Đang hoạt động</span>
+                      "Đang hoạt động"
                     ) : (
                       "Không hoạt động"
                     )}
@@ -1710,21 +1827,18 @@ export default function ChatPage() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => startCall("voice")}
                   className="w-8 h-8 md:w-9 md:h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 hidden sm:flex"
-                >
-                  <Search className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-8 h-8 md:w-9 md:h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 hidden sm:flex"
+                  title="Gọi thoại"
                 >
                   <Phone className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => startCall("video")}
                   className="w-8 h-8 md:w-9 md:h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 hidden sm:flex"
+                  title="Gọi video"
                 >
                   <Video className="w-4 h-4" />
                 </Button>
@@ -2343,6 +2457,67 @@ export default function ChatPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Call Dialog */}
+      {showCallDialog && selectedConversation && (
+        <CallDialog
+          open={showCallDialog}
+          onOpenChange={setShowCallDialog}
+          callType={callType}
+          isOutgoing={isOutgoingCall}
+          callerName={selectedConversation.name}
+          callerAvatar={selectedConversation.avatar}
+          channelName={`call-${selectedConversation.id}`}
+          userId={session?.user?.id}
+          otherUserId={selectedConversation.otherUserId}
+          onCallEnd={handleCallEnd}
+        />
+      )}
+
+      {/* Incoming Call Dialog */}
+      {showIncomingCallDialog && incomingCall && (
+        <Dialog
+          open={showIncomingCallDialog}
+          onOpenChange={setShowIncomingCallDialog}
+        >
+          <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-sm">
+            <div className="text-center py-6">
+              <div className="mb-6">
+                <Avatar className="w-24 h-24 mx-auto mb-4 ring-4 ring-cyan-500/50 animate-pulse">
+                  <AvatarImage src={incomingCall.fromAvatar} />
+                  <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white text-3xl">
+                    {incomingCall.fromName[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-2xl font-semibold text-white mb-2">
+                  {incomingCall.fromName}
+                </h3>
+                <p className="text-slate-400">
+                  {incomingCall.type === "voice"
+                    ? "Cuộc gọi thoại đến..."
+                    : "Cuộc gọi video đến..."}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={handleRejectCall}
+                  className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center"
+                >
+                  <PhoneOff className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={handleAcceptCall}
+                  className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 text-white animate-pulse flex items-center justify-center"
+                >
+                  <Phone className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Toast notifications */}
       <Toaster
         position="top-right"

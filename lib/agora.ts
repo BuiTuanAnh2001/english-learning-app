@@ -7,6 +7,11 @@ import AgoraRTC, {
 
 // Agora client configuration
 export const createAgoraClient = () => {
+  // Only create client on browser side
+  if (typeof window === 'undefined') {
+    throw new Error('Agora client can only be created in browser environment');
+  }
+
   return AgoraRTC.createClient({
     mode: "rtc",
     codec: "vp8",
@@ -17,6 +22,11 @@ export const createLocalTracks = async (
   audioEnabled: boolean = true,
   videoEnabled: boolean = false
 ) => {
+  // Only create tracks on browser side
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
   const tracks: {
     audioTrack?: IMicrophoneAudioTrack;
     videoTrack?: ICameraVideoTrack;

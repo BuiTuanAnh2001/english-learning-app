@@ -1,6 +1,5 @@
 "use client";
 
-import { CallDialog } from "@/components/chat/call-dialog";
 import { GifPicker } from "@/components/chat/gif-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -50,6 +49,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
+const CallDialog = dynamic(
+  () =>
+    import("@/components/chat/call-dialog").then((mod) => ({
+      default: mod.CallDialog,
+    })),
+  { ssr: false }
+);
+
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 // Custom hook for mobile detection
@@ -57,6 +64,9 @@ const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Check if window is defined (client-side only)
+    if (typeof window === "undefined") return;
+
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -399,10 +409,14 @@ export default function ChatPage() {
       );
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    if (typeof window !== "undefined") {
+      window.addEventListener("beforeunload", handleBeforeUnload);
+    }
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      }
       updateStatus("OFFLINE");
     };
   }, [session?.user?.id]);
@@ -943,7 +957,7 @@ export default function ChatPage() {
       setSelectedConversation(conversation);
       loadMessages(conversation.id);
       // On mobile, hide conversation list when chat is selected
-      if (window.innerWidth < 768) {
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
         setShowConversationList(false);
       }
     },

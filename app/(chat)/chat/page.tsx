@@ -73,6 +73,7 @@ interface Conversation {
   unreadCount?: number;
   type: "DIRECT" | "GROUP";
   isOnline?: boolean;
+  otherUserId?: string; // ID of the other user in direct chats
 }
 
 interface Message {
@@ -173,6 +174,8 @@ export default function ChatPage() {
               unreadCount: conv.unreadCount || 0,
               type: conv.type,
               isOnline: otherMember?.user?.status === "ONLINE",
+              otherUserId:
+                conv.type === "DIRECT" ? otherMember?.userId : undefined,
             };
           }
         );
@@ -308,7 +311,35 @@ export default function ChatPage() {
         !msg.readReceipts?.some((r) => r.userId === session.user.id)
     );
 
-    // Mark each unread message as read
+    if (unreadMessages.length === 0) return;
+
+    // Optimistically update UI first
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === selectedConversation.id ? { ...conv, unreadCount: 0 } : conv
+      )
+    );
+
+    // Update messages with read receipts optimistically
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (
+          msg.senderId !== session.user.id &&
+          !msg.readReceipts?.some((r) => r.userId === session.user.id)
+        ) {
+          return {
+            ...msg,
+            readReceipts: [
+              ...(msg.readReceipts || []),
+              { userId: session.user.id, readAt: new Date() },
+            ],
+          };
+        }
+        return msg;
+      })
+    );
+
+    // Mark each unread message as read on server
     for (const message of unreadMessages) {
       try {
         await fetch(`/api/messages/${message.id}/read`, {
@@ -318,17 +349,6 @@ export default function ChatPage() {
         console.error("Error marking message as read:", error);
       }
     }
-
-    // Reset unread count for current conversation
-    if (unreadMessages.length > 0) {
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversation.id
-            ? { ...conv, unreadCount: 0 }
-            : conv
-        )
-      );
-    }
   }, [selectedConversation?.id, session?.user?.id, messages]);
 
   useEffect(() => {
@@ -336,6 +356,84 @@ export default function ChatPage() {
       router.push("/login");
     }
   }, [status, router]);
+
+  // Update user status to ONLINE when component mounts
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const updateStatus = async (newStatus: "ONLINE" | "OFFLINE") => {
+      try {
+        await fetch("/api/user/status", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
+      } catch (error) {
+        console.error("Error updating status:", error);
+      }
+    };
+
+    // Set status to ONLINE on mount
+    updateStatus("ONLINE");
+
+    // Set status to OFFLINE on unmount or page close
+    const handleBeforeUnload = () => {
+      navigator.sendBeacon(
+        "/api/user/status",
+        JSON.stringify({ status: "OFFLINE" })
+      );
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      updateStatus("OFFLINE");
+    };
+  }, [session?.user?.id]);
+
+  // Subscribe to user status changes
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const supabase = createBrowserClient();
+    if (!supabase) return;
+
+    console.log("🔌 Setting up user status subscription");
+
+    const channel = supabase
+      .channel("user_status_changes")
+      .on("broadcast", { event: "user_status_changed" }, (payload) => {
+        const { userId, status: userStatus } = payload.payload;
+        console.log("👤 User status changed:", userId, userStatus);
+
+        // Update conversation list with new status
+        setConversations((prev) =>
+          prev.map((conv) => {
+            // Only update if this is a direct conversation with the user whose status changed
+            if (conv.type === "DIRECT" && conv.otherUserId === userId) {
+              return { ...conv, isOnline: userStatus === "ONLINE" };
+            }
+            return conv;
+          })
+        );
+
+        // Update selected conversation if needed
+        setSelectedConversation((current) => {
+          if (!current) return current;
+          if (current.type === "DIRECT" && current.otherUserId === userId) {
+            return { ...current, isOnline: userStatus === "ONLINE" };
+          }
+          return current;
+        });
+      })
+      .subscribe();
+
+    return () => {
+      console.log("🔌 Cleaning up user status subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (session?.user) {
@@ -560,6 +658,15 @@ export default function ChatPage() {
                 duration: 3000,
               }
             );
+
+            // Auto-mark as read if user is viewing this conversation
+            setTimeout(() => {
+              fetch(`/api/messages/${message.id}/read`, {
+                method: "POST",
+              }).catch((error) =>
+                console.error("Error auto-marking message as read:", error)
+              );
+            }, 500);
           }
 
           return [...prev, message];
@@ -1298,6 +1405,7 @@ export default function ChatPage() {
           unreadCount: 0,
           type: "DIRECT",
           isOnline: otherMember?.user?.status === "ONLINE",
+          otherUserId: otherMember?.userId,
         };
 
         // Check if conversation already exists

@@ -1,5 +1,6 @@
 "use client";
 
+import { GifPicker } from "@/components/chat/gif-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,7 +82,7 @@ interface Message {
   senderName: string;
   senderAvatar?: string;
   createdAt: Date;
-  type: "TEXT" | "IMAGE" | "FILE";
+  type: "TEXT" | "IMAGE" | "FILE" | "GIF";
   fileUrl?: string;
   fileName?: string;
   reactions?: { [emoji: string]: { userId: string; userName: string }[] };
@@ -89,7 +90,7 @@ interface Message {
     id: string;
     content: string;
     senderName: string;
-    type?: "TEXT" | "IMAGE" | "FILE";
+    type?: "TEXT" | "IMAGE" | "FILE" | "GIF";
     fileUrl?: string;
     fileName?: string;
   };
@@ -123,6 +124,7 @@ export default function ChatPage() {
   const [searchedUsers, setSearchedUsers] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -547,6 +549,8 @@ export default function ChatPage() {
                     body:
                       newMsg.type === "IMAGE"
                         ? "📷 Đã gửi một ảnh"
+                        : newMsg.type === "GIF"
+                        ? "🎬 Đã gửi một GIF"
                         : newMsg.content,
                     icon: senderInfo.avatar || "/default-avatar.png",
                     tag: newMsg.id,
@@ -557,6 +561,8 @@ export default function ChatPage() {
                 const messagePreview =
                   newMsg.type === "IMAGE"
                     ? "📷 Đã gửi một ảnh"
+                    : newMsg.type === "GIF"
+                    ? "🎬 Đã gửi một GIF"
                     : newMsg.content;
                 toast(`${senderInfo.name}: ${messagePreview}`, {
                   duration: 3000,
@@ -1051,6 +1057,135 @@ export default function ChatPage() {
     ]
   );
 
+  // Send GIF function
+  const sendGif = useCallback(
+    async (gifUrl: string) => {
+      if (!selectedConversation || isSendingMessage) return;
+
+      const tempId = `temp-${Date.now()}`;
+      const currentReply = replyingTo;
+
+      // Clear UI
+      setReplyingTo(null);
+      setIsSendingMessage(true);
+
+      // Optimistic update
+      const optimisticMessage: Message = {
+        id: tempId,
+        content: "",
+        senderId: session?.user?.id || "",
+        senderName: session?.user?.name || "You",
+        senderAvatar: session?.user?.image || undefined,
+        createdAt: new Date(),
+        type: "GIF",
+        fileUrl: gifUrl,
+        reactions: {},
+        replyTo: currentReply
+          ? {
+              id: currentReply.id,
+              content: currentReply.content,
+              senderName: currentReply.senderName,
+              type: currentReply.type,
+              fileUrl: currentReply.fileUrl,
+              fileName: currentReply.fileName,
+            }
+          : undefined,
+      };
+
+      setMessages((prev) => [...prev, optimisticMessage]);
+
+      // Update conversation list
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === selectedConversation.id
+            ? {
+                ...conv,
+                lastMessage: "🎬 GIF",
+                lastMessageTime: new Date(),
+              }
+            : conv
+        )
+      );
+
+      try {
+        const res = await fetch(
+          `/api/conversations/${selectedConversation.id}/messages`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: "",
+              type: "GIF",
+              fileUrl: gifUrl,
+              replyToId: currentReply?.id,
+            }),
+          }
+        );
+
+        if (res.ok) {
+          const response = await res.json();
+          const messageData = response.success ? response.data : response;
+
+          // Replace temporary message with real one
+          setMessages((prev) => {
+            const updated = prev.map((msg) =>
+              msg.id === tempId
+                ? {
+                    id: messageData.id,
+                    content: messageData.content,
+                    senderId: messageData.senderId || session?.user?.id || "",
+                    senderName:
+                      messageData.sender?.name || session?.user?.name || "You",
+                    senderAvatar:
+                      messageData.sender?.avatar || session?.user?.image,
+                    createdAt: messageData.createdAt || new Date(),
+                    type: "GIF" as const,
+                    fileUrl: messageData.fileUrl,
+                    reactions: {},
+                    replyTo: messageData.replyTo
+                      ? {
+                          id: messageData.replyTo.id,
+                          content: messageData.replyTo.content,
+                          senderName: messageData.replyTo.sender?.name || "",
+                          type: messageData.replyTo.type,
+                          fileUrl: messageData.replyTo.fileUrl,
+                          fileName: messageData.replyTo.fileName,
+                        }
+                      : undefined,
+                  }
+                : msg
+            );
+
+            return updated.sort(
+              (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime()
+            );
+          });
+        } else {
+          setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+          toast.error("Không thể gửi GIF");
+          if (currentReply) setReplyingTo(currentReply);
+        }
+      } catch (error) {
+        console.error("Error sending GIF:", error);
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+        toast.error("Không thể gửi GIF");
+        if (currentReply) setReplyingTo(currentReply);
+      } finally {
+        setIsSendingMessage(false);
+      }
+    },
+    [
+      selectedConversation,
+      isSendingMessage,
+      replyingTo,
+      session?.user?.id,
+      session?.user?.name,
+      session?.user?.image,
+    ]
+  );
+
   const searchUsers = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchedUsers([]);
@@ -1508,6 +1643,18 @@ export default function ChatPage() {
                                         📷 Ảnh
                                       </span>
                                     </div>
+                                  ) : message.replyTo.type === "GIF" &&
+                                    message.replyTo.fileUrl ? (
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={message.replyTo.fileUrl}
+                                        alt="Reply GIF"
+                                        className="w-10 h-10 rounded object-cover"
+                                      />
+                                      <span className="text-slate-300">
+                                        🎬 GIF
+                                      </span>
+                                    </div>
                                   ) : message.replyTo.type === "FILE" ? (
                                     <div className="flex items-center gap-1">
                                       <FileText className="w-3 h-3" />
@@ -1539,6 +1686,15 @@ export default function ChatPage() {
                                     src={message.fileUrl}
                                     alt={message.fileName}
                                     className="max-w-[200px] sm:max-w-[300px] max-h-[300px] sm:max-h-[400px] rounded-lg hover:opacity-90 transition-opacity object-cover"
+                                  />
+                                </div>
+                              )}
+                              {message.type === "GIF" && (
+                                <div className="cursor-pointer">
+                                  <img
+                                    src={message.fileUrl}
+                                    alt="GIF"
+                                    className="max-w-[200px] sm:max-w-[300px] max-h-[300px] sm:max-h-[400px] rounded-lg hover:opacity-90 transition-opacity"
                                   />
                                 </div>
                               )}
@@ -1795,6 +1951,31 @@ export default function ChatPage() {
                 >
                   <ImageIcon className="w-4 h-4" />
                 </Button>
+
+                {/* GIF button */}
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowGifPicker(!showGifPicker)}
+                    className="w-9 h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 flex-shrink-0"
+                    disabled={isUploading}
+                  >
+                    <span className="text-base font-semibold">GIF</span>
+                  </Button>
+
+                  {/* GIF Picker Popup */}
+                  {showGifPicker && (
+                    <GifPicker
+                      onSelect={(gifUrl) => {
+                        sendGif(gifUrl);
+                        setShowGifPicker(false);
+                      }}
+                      onClose={() => setShowGifPicker(false)}
+                    />
+                  )}
+                </div>
 
                 <div className="flex-1 relative">
                   <Input

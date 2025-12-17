@@ -233,7 +233,7 @@ export async function POST(
 
             const payload = JSON.stringify({
               title: message.sender?.name || 'Tin nhắn mới',
-              body: message.type === 'IMAGE' ? '📷 Đã gửi một ảnh' : message.content,
+              body: message.type === 'IMAGE' ? '📷 Đã gửi một ảnh' : message.type === 'GIF' ? '🎬 Đã gửi một GIF' : message.content,
               icon: message.sender?.avatar || '/icon.svg',
               image: message.type === 'IMAGE' ? message.fileUrl : undefined,
               url: `/chat?conversation=${params.id}`,

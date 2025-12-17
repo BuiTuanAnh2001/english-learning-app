@@ -220,4 +220,5 @@ enum MessageType {
   IMAGE
   FILE
   SYSTEM
+  GIF
 }

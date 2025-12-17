@@ -38,6 +38,9 @@ export async function GET(
           select: {
             id: true,
             content: true,
+            type: true,
+            fileUrl: true,
+            fileName: true,
             sender: {
               select: {
                 name: true
@@ -129,6 +132,9 @@ export async function POST(
           select: {
             id: true,
             content: true,
+            type: true,
+            fileUrl: true,
+            fileName: true,
             sender: {
               select: {
                 name: true
@@ -170,6 +176,16 @@ export async function POST(
             createdAt: message.createdAt,
             fileUrl: message.fileUrl,
             fileName: message.fileName,
+            replyTo: message.replyTo
+              ? {
+                id: message.replyTo.id,
+                content: message.replyTo.content,
+                senderName: message.replyTo.sender?.name,
+                type: message.replyTo.type,
+                fileUrl: message.replyTo.fileUrl,
+                fileName: message.replyTo.fileName,
+              }
+              : undefined,
           }
         });
 

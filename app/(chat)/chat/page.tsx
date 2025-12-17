@@ -19,7 +19,7 @@ import {
 import { createBrowserClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
-import { is, vi } from "date-fns/locale";
+import { vi } from "date-fns/locale";
 import {
   Archive,
   Check,
@@ -49,6 +49,20 @@ import toast, { Toaster } from "react-hot-toast";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
+// Custom hook for mobile detection
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+};
+
 interface Conversation {
   id: string;
   name: string;
@@ -75,6 +89,9 @@ interface Message {
     id: string;
     content: string;
     senderName: string;
+    type?: "TEXT" | "IMAGE" | "FILE";
+    fileUrl?: string;
+    fileName?: string;
   };
   readReceipts?: { userId: string; readAt: Date }[];
 }
@@ -122,6 +139,8 @@ export default function ChatPage() {
   const messageInputRef = useRef<HTMLInputElement>(null);
   const reactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showConversationList, setShowConversationList] = useState(true);
+  const isMobile = useIsMobile();
 
   // Define callbacks before useEffect to avoid dependency issues
   const loadConversations = useCallback(async () => {
@@ -208,6 +227,9 @@ export default function ChatPage() {
                   id: msg.replyTo.id,
                   content: msg.replyTo.content,
                   senderName: msg.replyTo.sender?.name || "Unknown",
+                  type: msg.replyTo.type,
+                  fileUrl: msg.replyTo.fileUrl,
+                  fileName: msg.replyTo.fileName,
                 }
               : undefined,
             readReceipts: msg.readReceipts || [],
@@ -347,7 +369,7 @@ export default function ChatPage() {
             session.user.id
           );
           if (subscription) {
-            toast.success("✅ Thông báo đẩy đã được bật thành công!");
+            toast.success("🔔 Thông báo đẩy đã được bật thành công!");
             console.log(
               "🔔 Push notifications enabled:",
               subscription.endpoint
@@ -443,6 +465,16 @@ export default function ChatPage() {
           type: newMsg.type || "TEXT",
           fileUrl: newMsg.fileUrl,
           fileName: newMsg.fileName,
+          replyTo: newMsg.replyTo
+            ? {
+                id: newMsg.replyTo.id,
+                content: newMsg.replyTo.content,
+                senderName: newMsg.replyTo.senderName,
+                type: newMsg.replyTo.type,
+                fileUrl: newMsg.replyTo.fileUrl,
+                fileName: newMsg.replyTo.fileName,
+              }
+            : undefined,
         };
 
         setMessages((prev) => {
@@ -679,6 +711,10 @@ export default function ChatPage() {
     (conversation: Conversation) => {
       setSelectedConversation(conversation);
       loadMessages(conversation.id);
+      // On mobile, hide conversation list when chat is selected
+      if (window.innerWidth < 768) {
+        setShowConversationList(false);
+      }
     },
     [loadMessages]
   );
@@ -850,6 +886,9 @@ export default function ChatPage() {
               id: currentReply.id,
               content: currentReply.content,
               senderName: currentReply.senderName,
+              type: currentReply.type,
+              fileUrl: currentReply.fileUrl,
+              fileName: currentReply.fileName,
             }
           : undefined,
       };
@@ -964,6 +1003,9 @@ export default function ChatPage() {
                           id: messageData.replyTo.id,
                           content: messageData.replyTo.content,
                           senderName: messageData.replyTo.sender?.name || "",
+                          type: messageData.replyTo.type,
+                          fileUrl: messageData.replyTo.fileUrl,
+                          fileName: messageData.replyTo.fileName,
                         }
                       : undefined,
                   }
@@ -1089,8 +1131,8 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen bg-slate-900 flex overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-16 bg-slate-950 border-r border-slate-800 flex flex-col items-center py-4 gap-2 flex-shrink-0">
+      {/* Sidebar - hidden on mobile */}
+      <div className="hidden md:flex w-16 bg-slate-950 border-r border-slate-800 flex-col items-center py-4 gap-2 flex-shrink-0">
         <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center cursor-pointer mb-4">
           <MessageSquare className="w-5 h-5 text-white" />
         </div>
@@ -1157,8 +1199,13 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
-      {/* Conversation List */}
-      <div className="w-80 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0">
+      {/* Conversation List - full width on mobile, fixed width on desktop */}
+      <div
+        className={cn(
+          "bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 transition-all",
+          isMobile ? (showConversationList ? "w-full" : "hidden") : "w-80"
+        )}
+      >
         <div className="p-4 border-b border-slate-800/50">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold text-white">Tin nhắn</h2>
@@ -1200,12 +1247,12 @@ export default function ChatPage() {
 
         <ScrollArea className="flex-1">
           <div className="p-2">
-            { isLoadingConversations && filteredConversations.length === 0 &&
+            {isLoadingConversations && filteredConversations.length === 0 && (
               <div className="flex flex-col justify-center items-center">
                 <div className="w-10 h-10 border-4 border-cyan-500 pb-2 border-t-transparent rounded-full  animate-spin"></div>
                 <h3>Đang tải cuộc trò chuyện...</h3>
               </div>
-            }
+            )}
             {filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
@@ -1275,13 +1322,39 @@ export default function ChatPage() {
         </ScrollArea>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Chat Area - full width on mobile when shown */}
+      <div
+        className={cn(
+          "flex-1 flex flex-col min-w-0",
+          isMobile && showConversationList ? "hidden" : "flex"
+        )}
+      >
         {selectedConversation ? (
           <>
             {/* Chat Header */}
             <div className="h-14 border-b border-slate-800/50 flex items-center justify-between px-4 flex-shrink-0 bg-slate-900/50 backdrop-blur-sm">
               <div className="flex items-center gap-3">
+                {/* Back button for mobile */}
+                {isMobile && (
+                  <button
+                    onClick={() => setShowConversationList(true)}
+                    className="mr-2 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                )}
                 <div className="relative">
                   <Avatar className="w-9 h-9">
                     <AvatarImage src={selectedConversation.avatar} />
@@ -1322,28 +1395,28 @@ export default function ChatPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-9 h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
+                  className="w-8 h-8 md:w-9 md:h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 hidden sm:flex"
                 >
                   <Search className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-9 h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
+                  className="w-8 h-8 md:w-9 md:h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 hidden sm:flex"
                 >
                   <Phone className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-9 h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
+                  className="w-8 h-8 md:w-9 md:h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 hidden sm:flex"
                 >
                   <Video className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-9 h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
+                  className="w-8 h-8 md:w-9 md:h-9 text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
                 >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
@@ -1351,7 +1424,7 @@ export default function ChatPage() {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-4 py-3">
+            <ScrollArea className="flex-1 px-2 md:px-4 py-3">
               <div className="space-y-3 max-w-4xl mx-auto">
                 {isLoadingMessages ? (
                   <div className="flex items-center justify-center py-20">
@@ -1379,7 +1452,7 @@ export default function ChatPage() {
                         )}
                       >
                         {!isOwn && (
-                          <Avatar className="w-7 h-7 flex-shrink-0">
+                          <Avatar className="w-6 h-6 md:w-7 md:h-7 flex-shrink-0">
                             <AvatarImage src={message.senderAvatar} />
                             <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white text-xs font-semibold">
                               {message.senderName?.[0]?.toUpperCase()}
@@ -1396,11 +1469,19 @@ export default function ChatPage() {
                           <div className="relative group">
                             <div
                               className={cn(
-                                "max-w-md px-3 py-2 rounded-2xl break-words",
+                                "max-w-[280px] sm:max-w-md px-3 py-2 rounded-2xl break-words",
                                 isOwn
                                   ? "bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-br-sm"
                                   : "bg-slate-800 text-white rounded-bl-sm"
                               )}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setShowReactionPicker(
+                                  showReactionPicker === message.id
+                                    ? null
+                                    : message.id
+                                );
+                              }}
                             >
                               {/* Replied message preview */}
                               {message.replyTo && (
@@ -1415,9 +1496,30 @@ export default function ChatPage() {
                                   <div className="font-semibold mb-0.5">
                                     {message.replyTo.senderName}
                                   </div>
-                                  <div className="truncate">
-                                    {message.replyTo.content}
-                                  </div>
+                                  {message.replyTo.type === "IMAGE" &&
+                                  message.replyTo.fileUrl ? (
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={message.replyTo.fileUrl}
+                                        alt="Reply image"
+                                        className="w-10 h-10 rounded object-cover"
+                                      />
+                                      <span className="text-slate-300">
+                                        📷 Ảnh
+                                      </span>
+                                    </div>
+                                  ) : message.replyTo.type === "FILE" ? (
+                                    <div className="flex items-center gap-1">
+                                      <FileText className="w-3 h-3" />
+                                      <span className="truncate">
+                                        {message.replyTo.fileName || "File"}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="truncate">
+                                      {message.replyTo.content}
+                                    </div>
+                                  )}
                                 </div>
                               )}
 
@@ -1436,7 +1538,7 @@ export default function ChatPage() {
                                   <img
                                     src={message.fileUrl}
                                     alt={message.fileName}
-                                    className="max-w-[300px] max-h-[400px] rounded-lg hover:opacity-90 transition-opacity object-cover"
+                                    className="max-w-[200px] sm:max-w-[300px] max-h-[300px] sm:max-h-[400px] rounded-lg hover:opacity-90 transition-opacity object-cover"
                                   />
                                 </div>
                               )}
@@ -1453,8 +1555,11 @@ export default function ChatPage() {
                             {/* Action buttons */}
                             <div
                               className={cn(
-                                "absolute top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                                isOwn ? "-left-16" : "-right-16"
+                                "absolute top-0 gap-1 transition-opacity",
+                                "hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100",
+                                isOwn
+                                  ? "-left-12 sm:-left-16"
+                                  : "-right-12 sm:-right-16"
                               )}
                             >
                               {/* Reply button */}
@@ -1466,7 +1571,7 @@ export default function ChatPage() {
                                 className="bg-slate-700 hover:bg-slate-600 rounded-full p-1"
                                 title="Trả lời"
                               >
-                                <Reply className="w-4 h-4 text-slate-300" />
+                                <Reply className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-300" />
                               </button>
 
                               {/* Reaction button */}
@@ -1481,7 +1586,7 @@ export default function ChatPage() {
                                 className="bg-slate-700 hover:bg-slate-600 rounded-full p-1"
                                 title="Thêm reaction"
                               >
-                                <Smile className="w-4 h-4 text-slate-300" />
+                                <Smile className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-300" />
                               </button>
                             </div>
 
@@ -1489,23 +1594,61 @@ export default function ChatPage() {
                             {showReactionPicker === message.id && (
                               <div
                                 className={cn(
-                                  "absolute top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg p-2 shadow-xl z-10 flex gap-1",
+                                  "absolute top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10",
                                   isOwn ? "right-0" : "left-0"
                                 )}
                               >
-                                {["👍", "❤️", "😂", "😮", "😢", "🎉"].map(
-                                  (emoji) => (
-                                    <button
-                                      key={emoji}
-                                      onClick={() =>
-                                        handleAddReaction(message.id, emoji)
-                                      }
-                                      className="text-2xl hover:scale-125 transition-transform p-1"
-                                    >
-                                      {emoji}
-                                    </button>
-                                  )
-                                )}
+                                {/* Mobile: Show actions + reactions */}
+                                <div className="sm:hidden">
+                                  <button
+                                    onClick={() => {
+                                      setReplyingTo(message);
+                                      messageInputRef.current?.focus();
+                                      setShowReactionPicker(null);
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 w-full text-left text-sm"
+                                  >
+                                    <Reply className="w-4 h-4" />
+                                    <span>Trả lời</span>
+                                  </button>
+                                  <div className="border-t border-slate-700 px-2 py-2">
+                                    <div className="flex gap-1">
+                                      {["👍", "❤️", "😂", "😮", "😢", "🎉"].map(
+                                        (emoji) => (
+                                          <button
+                                            key={emoji}
+                                            onClick={() =>
+                                              handleAddReaction(
+                                                message.id,
+                                                emoji
+                                              )
+                                            }
+                                            className="text-2xl hover:scale-125 transition-transform p-1"
+                                          >
+                                            {emoji}
+                                          </button>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Desktop: Only reactions */}
+                                <div className="hidden sm:flex gap-1 p-2">
+                                  {["👍", "❤️", "😂", "😮", "😢", "🎉"].map(
+                                    (emoji) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() =>
+                                          handleAddReaction(message.id, emoji)
+                                        }
+                                        className="text-2xl hover:scale-125 transition-transform p-1"
+                                      >
+                                        {emoji}
+                                      </button>
+                                    )
+                                  )}
+                                </div>
                               </div>
                             )}
 
@@ -1567,18 +1710,38 @@ export default function ChatPage() {
             </ScrollArea>
 
             {/* Message Input */}
-            <div className="border-t border-slate-800/50 p-3 bg-slate-900/50 backdrop-blur-sm flex-shrink-0">
+            <div className="border-t border-slate-800/50 p-2 md:p-3 bg-slate-900/50 backdrop-blur-sm flex-shrink-0">
               {/* Reply Preview Banner */}
               {replyingTo && (
-                <div className="max-w-4xl mx-auto mb-2 bg-slate-800 rounded-lg p-3 flex items-start gap-2 border border-slate-700">
+                <div className="max-w-4xl mx-auto mb-2 bg-slate-800 rounded-lg p-2 md:p-3 flex items-start gap-2 border border-slate-700">
                   <Reply className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-semibold text-cyan-400 mb-1">
                       Trả lời {replyingTo.senderName}
                     </div>
-                    <div className="text-sm text-slate-300 truncate">
-                      {replyingTo.content}
-                    </div>
+                    {replyingTo.type === "IMAGE" && replyingTo.fileUrl ? (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={replyingTo.fileUrl}
+                          alt="Reply preview"
+                          className="w-10 h-10 rounded object-cover"
+                        />
+                        <span className="text-xs md:text-sm text-slate-300">
+                          📷 Ảnh
+                        </span>
+                      </div>
+                    ) : replyingTo.type === "FILE" ? (
+                      <div className="flex items-center gap-2 text-xs md:text-sm text-slate-300">
+                        <FileText className="w-4 h-4" />
+                        <span className="truncate">
+                          {replyingTo.fileName || "File"}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-xs md:text-sm text-slate-300 truncate">
+                        {replyingTo.content}
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => setReplyingTo(null)}
@@ -1596,7 +1759,7 @@ export default function ChatPage() {
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="max-h-40 rounded-lg border-2 border-cyan-500"
+                      className="max-h-32 md:max-h-40 rounded-lg border-2 border-cyan-500"
                     />
                     <button
                       onClick={handleRemoveImage}
@@ -1661,7 +1824,7 @@ export default function ChatPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="w-8 h-8 text-slate-400 hover:text-cyan-400 hover:bg-slate-700"
+                      className="w-8 h-8 text-slate-400 hover:text-cyan-400 hover:bg-slate-700 hidden sm:flex"
                     >
                       <Smile className="w-4 h-4" />
                     </Button>
@@ -1700,19 +1863,29 @@ export default function ChatPage() {
                   )}
                 </Button>
               </form>
-              <p className="text-xs text-slate-500 text-center mt-2">
+              <p className="text-xs text-slate-500 text-center mt-2 hidden sm:block">
                 Nhấn Enter để gửi, Shift + Enter để xuống dòng
               </p>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center p-4">
             <div className="text-center text-slate-400">
               <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <h3 className="text-xl font-semibold mb-2">
                 Chọn một cuộc trò chuyện
               </h3>
-              <p>Chọn một cuộc trò chuyện để bắt đầu nhắn tin</p>
+              <p className="text-sm md:text-base">
+                Chọn một cuộc trò chuyện để bắt đầu nhắn tin
+              </p>
+              {isMobile && (
+                <button
+                  onClick={() => setShowConversationList(true)}
+                  className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                >
+                  Xem danh sách trò chuyện
+                </button>
+              )}
             </div>
           </div>
         )}

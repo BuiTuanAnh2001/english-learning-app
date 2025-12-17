@@ -408,27 +408,76 @@ export default function ChatPage() {
     const supabase = createBrowserClient();
     if (!supabase) return;
 
-    // Subscribe to message updates to refresh conversation list
+    console.log("🔌 Setting up user conversation updates subscription");
+
+    // Subscribe to a user-specific channel for new conversations/messages
     const channel = supabase
-      .channel(`user:${session.user.id}:conversations`)
+      .channel(`user:${session.user.id}:updates`)
       .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "Message",
-        },
-        () => {
-          // Reload conversations when new message is received
-          loadConversations();
+        "broadcast",
+        { event: "new_conversation_message" },
+        async (payload) => {
+          console.log(
+            "📨 New conversation message broadcast received:",
+            payload
+          );
+          const { conversationId, message } = payload.payload;
+
+          // Check if this conversation exists in our list
+          const existingConv = conversations.find(
+            (c) => c.id === conversationId
+          );
+
+          if (!existingConv) {
+            // This is a new conversation - reload to get it
+            console.log(
+              "🆕 New conversation detected, reloading conversations..."
+            );
+            await loadConversations();
+          } else {
+            // Update existing conversation
+            setConversations((prev) => {
+              const updated = prev.map((conv) => {
+                if (conv.id === conversationId) {
+                  return {
+                    ...conv,
+                    lastMessage:
+                      message.content ||
+                      (message.type === "IMAGE"
+                        ? "📷 Ảnh"
+                        : message.type === "GIF"
+                        ? "🎬 GIF"
+                        : ""),
+                    lastMessageTime: new Date(message.createdAt),
+                    unreadCount: (conv.unreadCount || 0) + 1,
+                  };
+                }
+                return conv;
+              });
+
+              // Sort conversations by last message time
+              return updated.sort((a, b) => {
+                const timeA = a.lastMessageTime
+                  ? new Date(a.lastMessageTime).getTime()
+                  : 0;
+                const timeB = b.lastMessageTime
+                  ? new Date(b.lastMessageTime).getTime()
+                  : 0;
+                return timeB - timeA;
+              });
+            });
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("📡 User updates subscription status:", status);
+      });
 
     return () => {
+      console.log("🔌 Cleaning up user updates subscription");
       supabase.removeChannel(channel);
     };
-  }, [session?.user?.id, loadConversations]);
+  }, [session?.user?.id, loadConversations, conversations]);
 
   // Realtime subscription for messages
   useEffect(() => {

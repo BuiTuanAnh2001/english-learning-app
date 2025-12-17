@@ -159,10 +159,10 @@ export async function POST(
       if (supabaseKey) {
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Broadcast to channel - this will trigger postgres_changes listener
-        const channel = supabase.channel(`conversation:${params.id}`);
+        // Broadcast to conversation channel (for users already in the conversation)
+        const conversationChannel = supabase.channel(`conversation:${params.id}`);
 
-        await channel.send({
+        await conversationChannel.send({
           type: 'broadcast',
           event: 'new_message',
           payload: {
@@ -189,7 +189,43 @@ export async function POST(
           }
         });
 
-        console.log('✅ Realtime event broadcasted for message:', message.id);
+        console.log('✅ Realtime event broadcasted to conversation channel:', message.id);
+
+        // Also broadcast to each member's personal channel (for conversation list updates)
+        const members = await prisma.conversationMember.findMany({
+          where: {
+            conversationId: params.id,
+            userId: { not: session.user.id } // Don't send to sender
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        });
+
+        for (const member of members) {
+          const userChannel = supabase.channel(`user:${member.userId}:updates`);
+          await userChannel.send({
+            type: 'broadcast',
+            event: 'new_conversation_message',
+            payload: {
+              conversationId: params.id,
+              message: {
+                id: message.id,
+                content: message.content,
+                type: message.type,
+                createdAt: message.createdAt,
+                senderId: message.senderId,
+                senderName: message.sender?.name
+              }
+            }
+          });
+          console.log(`✅ Broadcast sent to user ${member.user.name} (${member.userId})`);
+        }
       }
     } catch (broadcastError) {
       console.error('⚠️ Failed to broadcast realtime event:', broadcastError);

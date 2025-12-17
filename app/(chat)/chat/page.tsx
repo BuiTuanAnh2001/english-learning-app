@@ -177,7 +177,13 @@ export default function ChatPage() {
           }
         );
 
-        setConversations(transformedConversations);
+        // Deduplicate conversations by ID
+        const uniqueConversations = transformedConversations.filter(
+          (conv: Conversation, index: number, self: Conversation[]) =>
+            index === self.findIndex((c) => c.id === conv.id)
+        );
+
+        setConversations(uniqueConversations);
       }
     } catch (error) {
       console.error("Error loading conversations:", error);
@@ -433,7 +439,16 @@ export default function ChatPage() {
             console.log(
               "🆕 New conversation detected, reloading conversations..."
             );
-            await loadConversations();
+            // Use a flag to prevent duplicate loads
+            setConversations((currentConvs) => {
+              // Double check it's still not there
+              if (currentConvs.some((c) => c.id === conversationId)) {
+                return currentConvs;
+              }
+              // Trigger reload in next tick
+              setTimeout(() => loadConversations(), 0);
+              return currentConvs;
+            });
           } else {
             // Update existing conversation
             setConversations((prev) => {
@@ -1285,7 +1300,15 @@ export default function ChatPage() {
           isOnline: otherMember?.user?.status === "ONLINE",
         };
 
-        setConversations([conversation, ...conversations]);
+        // Check if conversation already exists
+        setConversations((prev) => {
+          const exists = prev.some((c) => c.id === conversation.id);
+          if (exists) {
+            return prev; // Don't add duplicate
+          }
+          return [conversation, ...prev];
+        });
+
         setSelectedConversation(conversation);
         setShowNewChatDialog(false);
         setUserSearchQuery("");

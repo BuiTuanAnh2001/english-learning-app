@@ -19,7 +19,7 @@ import {
 import { createBrowserClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { is, vi } from "date-fns/locale";
 import {
   Archive,
   Check,
@@ -116,6 +116,7 @@ export default function ChatPage() {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
@@ -124,6 +125,7 @@ export default function ChatPage() {
 
   // Define callbacks before useEffect to avoid dependency issues
   const loadConversations = useCallback(async () => {
+    setIsLoadingConversations(true);
     try {
       const res = await fetch("/api/conversations");
       if (res.ok) {
@@ -159,6 +161,8 @@ export default function ChatPage() {
     } catch (error) {
       console.error("Error loading conversations:", error);
       setConversations([]);
+    } finally {
+      setIsLoadingConversations(false);
     }
   }, [session?.user?.id]);
 
@@ -1153,7 +1157,6 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
-
       {/* Conversation List */}
       <div className="w-80 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-slate-800/50">
@@ -1197,6 +1200,12 @@ export default function ChatPage() {
 
         <ScrollArea className="flex-1">
           <div className="p-2">
+            { isLoadingConversations && filteredConversations.length === 0 &&
+              <div className="flex flex-col justify-center items-center">
+                <div className="w-10 h-10 border-4 border-cyan-500 pb-2 border-t-transparent rounded-full  animate-spin"></div>
+                <h3>Đang tải cuộc trò chuyện...</h3>
+              </div>
+            }
             {filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
@@ -1256,7 +1265,7 @@ export default function ChatPage() {
               </div>
             ))}
 
-            {filteredConversations.length === 0 && (
+            {filteredConversations.length === 0 && !isLoadingConversations && (
               <div className="text-center py-20 text-slate-500">
                 <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Không tìm thấy cuộc trò chuyện</p>
@@ -1708,7 +1717,6 @@ export default function ChatPage() {
           </div>
         )}
       </div>
-
       {/* New Chat Dialog */}
       <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
         <DialogContent className="bg-slate-900 border-slate-800 text-white">
@@ -1778,7 +1786,6 @@ export default function ChatPage() {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* Image Viewer Modal */}
       {viewingImage && (
         <Dialog
@@ -1802,7 +1809,6 @@ export default function ChatPage() {
           </DialogContent>
         </Dialog>
       )}
-
       {/* Toast notifications */}
       <Toaster
         position="top-right"

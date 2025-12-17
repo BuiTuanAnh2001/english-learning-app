@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 interface GifPickerProps {
@@ -26,6 +26,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
   const [gifs, setGifs] = useState<GifResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [offset, setOffset] = useState(0);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sử dụng Giphy API - có public API key
   const GIPHY_API_KEY =
@@ -81,11 +82,36 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto search when user types (with debounce)
+  useEffect(() => {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timeout to search after user stops typing
+    searchTimeoutRef.current = setTimeout(() => {
+      setOffset(0);
+      searchGifs(searchQuery, true);
+    }, 500); // Wait 500ms after user stops typing
+
+    // Cleanup
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]); // Run when searchQuery changes
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!searchQuery.trim()) {
       return;
+    }
+    // Clear timeout and search immediately
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
     setOffset(0);
     searchGifs(searchQuery, true);
